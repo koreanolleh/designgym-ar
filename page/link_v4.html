@@ -91,7 +91,7 @@
   <section class="sec dark">
     <h2>사기 전에,<br>우리 집에 먼저 펼쳐보세요.</h2>
     <p class="sub">폰으로 바닥을 비추면 실제 크기로 깔려요. 거실에 맞는지, 어떤 색이 어울리는지 10초면 알 수 있어요.</p>
-    <a class="btn" href="/ar-inapp.html?c=active_steps&utm_source=instagram&utm_medium=bio&utm_content=ar">우리 집에 먼저 펼쳐보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="btn" href="#360" data-open360="1">우리 집에 먼저 펼쳐보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </section>
 
   <section class="sec light">
@@ -130,10 +130,12 @@
   var ov=document.getElementById('ov'), mv=document.getElementById('mv'), loaded=false, cur='active_steps', sy=0;
   function setKey(k){ cur=k; mv.src='https://nyangnyang.kr/ar/models/mat_'+k+'.glb'; document.getElementById('ovar').href='/ar-inapp.html?c='+k+'&utm_source=instagram&utm_medium=bio&utm_content=ar360';
     document.querySelectorAll('#ov .chip').forEach(function(c){ c.className='chip'+(c.getAttribute('data-k')===k?' on':''); }); }
-  document.getElementById('open360').addEventListener('click', function(){
+  function open360(ev){ if (ev) ev.preventDefault();
     if(!loaded){ loaded=true; var sc=document.createElement('script'); sc.type='module'; sc.src='https://nyangnyang.kr/ar/model-viewer.min.js'; document.head.appendChild(sc); }
     setKey(cur); ov.className='on'; ov.setAttribute('aria-hidden','false'); sy=window.scrollY; document.body.style.top=(-sy)+'px'; document.body.classList.add('ovlock');
-  });
+  }
+  document.getElementById('open360').addEventListener('click', open360);
+  document.querySelectorAll('[data-open360]').forEach(function(b){ b.addEventListener('click', open360); });
   document.getElementById('close360').addEventListener('click', function(){ ov.className=''; ov.setAttribute('aria-hidden','true'); document.body.classList.remove('ovlock'); document.body.style.top=''; window.scrollTo(0, sy); });
   document.querySelectorAll('#ov .chip').forEach(function(c){ c.addEventListener('click', function(){ setKey(c.getAttribute('data-k')); }); });
   // 아이폰: AR로 넘어가기 전에 이 탭에서 '움직임 권한'을 미리 받아두면, 카메라 페이지에서 바로 카메라 권한만 뜬다
