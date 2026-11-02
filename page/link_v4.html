@@ -40,6 +40,8 @@
   .sec.dark .sub{color:#fffb}
   .sec.dark .btn{background:#fff;color:#1c1c1c}
   .sec.light{background:#e3e7dd;color:#1a1a1a;padding:26px 24px 28px}
+  .sec.light.bg-coral{background:#f7e4de}.bg-coral .script small{color:#b0796c}
+  .sec.light.bg-gray{background:#e6e2dd}.bg-gray .script small{color:#8c857d}
   .sec.light .btn.o{background:#fff;border:1px solid #fff;color:#1a1a1a;box-shadow:0 4px 14px #0000000d}
   .script{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:500;font-size:26px;line-height:1.2;letter-spacing:-.01em;margin:0 0 18px;color:#1a1a1a}
   .script small{display:block;font-size:15px;font-weight:400;color:#7d8576;margin-top:5px}
@@ -134,6 +136,7 @@
 </div>
 <script>
 (function(){
+  var bgm=location.search.match(/[?&]bg=(coral|gray)/); if(bgm) document.querySelector('.sec.light').classList.add('bg-'+bgm[1]);
   var ov=document.getElementById('ov'), mv=document.getElementById('mv'), loaded=false, cur='active_steps', sy=0;
   function setKey(k){ cur=k; mv.src='https://nyangnyang.kr/ar/models/mat_'+k+'.glb'; document.getElementById('ovar').href='/ar-inapp.html?c='+k+'&utm_source=instagram&utm_medium=bio&utm_content=ar360';
     document.querySelectorAll('#ov .chip').forEach(function(c){ c.className='chip'+(c.getAttribute('data-k')===k?' on':''); }); }
