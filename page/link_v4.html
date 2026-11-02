@@ -23,8 +23,8 @@
   .story p{margin:0 0 12px}
   .story b{color:#1a1a1a}
   .photo{margin:28px 0 0;position:relative}
-  .photo{margin:0;position:relative}
-  .photo>img{width:100%;display:block;aspect-ratio:4/4.4;object-fit:cover;object-position:center 60%}
+  .photo{margin:0;position:relative;aspect-ratio:4/4.4;overflow:hidden;background:#d9d4cc;line-height:0}
+  .photo>img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;object-position:center 60%}
   .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0005 0%,#0000 35%,#0000 80%,#0004 100%);pointer-events:none}
   .plogo{position:absolute;left:0;right:0;top:max(26px,env(safe-area-inset-top));z-index:2;text-align:center}
   .plogo img{width:92px;opacity:.95}
@@ -41,8 +41,10 @@
   .btn{display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 20px 0 22px;border-radius:14px;background:#1a1a1a;color:#fff;font-size:16px;font-weight:600;letter-spacing:-.02em}
   .btn.o{background:#0000;color:#1a1a1a;border:1.5px solid #1a1a1a;margin-top:10px}
   .colors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
-  .colors a{display:block}
-  .colors img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;display:block}
+  .colors a{display:block;line-height:0}
+  .colors span{line-height:1.3}
+  .colors .th{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#eee}
+  .colors img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
   .colors span{display:block;font-size:11.5px;color:#555;margin-top:7px;text-align:center}
   .list{margin:26px 24px 0;border-top:1px solid #e3ded6}
   .row{display:flex;align-items:center;justify-content:space-between;height:54px;border-bottom:1px solid #e3ded6;font-size:15.5px;font-weight:500;letter-spacing:-.02em}
@@ -50,9 +52,10 @@
   .foot{padding:26px 0 calc(env(safe-area-inset-bottom) + 30px);text-align:center;font-family:Jost,sans-serif;font-size:11px;letter-spacing:.14em;color:#b0aaa0}
   .foot a{margin:0 9px}
   .mbi-simpletalk-kakao,[class*=simpletalk]{display:none !important}
-  #ov{position:fixed;inset:0;z-index:50;background:#f6f3ee;display:none;flex-direction:column}
+  #ov{position:fixed;top:0;left:0;right:0;bottom:0;height:100%;z-index:50;background:#f6f3ee;display:none;flex-direction:column}
+  body.ovlock{position:fixed;left:0;right:0;overflow:hidden}
   #ov.on{display:flex}
-  #ov model-viewer{flex:1;width:100%;min-height:0;--poster-color:#f6f3ee}
+  #ov model-viewer{display:block;flex:1;width:100%;min-height:0;--poster-color:#f6f3ee;--progress-bar-color:transparent;--progress-bar-height:0px}
   #ov .top{display:flex;align-items:center;justify-content:space-between;padding:max(14px,env(safe-area-inset-top)) 16px 0}
   #ov .top b{font-family:Jost,sans-serif;font-size:11px;letter-spacing:.22em;font-weight:500;color:#9a948b}
   #ov .x{width:38px;height:38px;border-radius:50%;border:0;background:#1a1a1a;color:#fff;font-size:22px;line-height:38px;text-align:center;padding:0}
@@ -90,11 +93,11 @@
     <h2>세 가지 색, 한 가지 두께.</h2>
     <p class="sub">8mm TPE 스웨이드. 층간소음 걱정 없이, 펼쳐둔 채로 방의 일부가 되는 색만 골랐어요.</p>
     <div class="colors">
-      <a href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio"><img src="https://m.designgym.co.kr/web/product/big/202610/20a859c8c353232e95a4c4cf0935cccb.jpg" alt=""><span>Active steps</span></a>
-      <a href="/product/detail.html?product_no=33&utm_source=instagram&utm_medium=bio"><img src="https://m.designgym.co.kr/web/product/big/202203/126021efda194a9b21f0e56a294864cd.jpg" alt=""><span>Before sunrise</span></a>
-      <a href="/product/detail.html?product_no=34&utm_source=instagram&utm_medium=bio"><img src="https://m.designgym.co.kr/web/product/big/202203/e2c9b082476f49c988d4137280dd779a.jpg" alt=""><span>Warm sunlight</span></a>
+      <a href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio"><span class="th"><img src="https://m.designgym.co.kr/web/product/big/202610/20a859c8c353232e95a4c4cf0935cccb.jpg" alt=""></span><span>Active steps</span></a>
+      <a href="/product/detail.html?product_no=33&utm_source=instagram&utm_medium=bio"><span class="th"><img src="https://m.designgym.co.kr/web/product/big/202203/126021efda194a9b21f0e56a294864cd.jpg" alt=""></span><span>Before sunrise</span></a>
+      <a href="/product/detail.html?product_no=34&utm_source=instagram&utm_medium=bio"><span class="th"><img src="https://m.designgym.co.kr/web/product/big/202203/e2c9b082476f49c988d4137280dd779a.jpg" alt=""></span><span>Warm sunlight</span></a>
     </div>
-    <a class="btn" href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio&utm_content=buy">루틴 매트 더 자세히 보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="btn o" href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio&utm_content=buy">루틴 매트 더 자세히 보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </section>
 
   <nav class="list">
@@ -106,7 +109,7 @@
 </div>
 <div id="ov" aria-hidden="true">
   <div class="top"><b>360° VIEW</b><button type="button" class="x" id="close360" aria-label="닫기">×</button></div>
-  <model-viewer id="mv" camera-controls auto-rotate rotation-per-second="20deg" shadow-intensity="0.35" exposure="0.72" tone-mapping="aces" camera-orbit="35deg 70deg auto" alt="루틴 매트 360도 보기"></model-viewer>
+  <model-viewer id="mv" camera-controls auto-rotate rotation-per-second="20deg" shadow-intensity="0.35" exposure="0.72" tone-mapping="aces" camera-orbit="35deg 70deg auto" alt="루틴 매트 360도 보기"><div slot="progress-bar"></div></model-viewer>
   <div class="bot">
     <p class="hint">드래그해서 돌려보세요</p>
     <div class="chips">
@@ -119,14 +122,14 @@
 </div>
 <script>
 (function(){
-  var ov=document.getElementById('ov'), mv=document.getElementById('mv'), loaded=false, cur='active_steps';
+  var ov=document.getElementById('ov'), mv=document.getElementById('mv'), loaded=false, cur='active_steps', sy=0;
   function setKey(k){ cur=k; mv.src='https://nyangnyang.kr/ar/models/mat_'+k+'.glb'; document.getElementById('ovar').href='/ar-inapp.html?c='+k+'&utm_source=instagram&utm_medium=bio&utm_content=ar360';
     document.querySelectorAll('#ov .chip').forEach(function(c){ c.className='chip'+(c.getAttribute('data-k')===k?' on':''); }); }
   document.getElementById('open360').addEventListener('click', function(){
     if(!loaded){ loaded=true; var sc=document.createElement('script'); sc.type='module'; sc.src='https://nyangnyang.kr/ar/model-viewer.min.js'; document.head.appendChild(sc); }
-    setKey(cur); ov.className='on'; ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+    setKey(cur); ov.className='on'; ov.setAttribute('aria-hidden','false'); sy=window.scrollY; document.body.style.top=(-sy)+'px'; document.body.classList.add('ovlock');
   });
-  document.getElementById('close360').addEventListener('click', function(){ ov.className=''; ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; });
+  document.getElementById('close360').addEventListener('click', function(){ ov.className=''; ov.setAttribute('aria-hidden','true'); document.body.classList.remove('ovlock'); document.body.style.top=''; window.scrollTo(0, sy); });
   document.querySelectorAll('#ov .chip').forEach(function(c){ c.addEventListener('click', function(){ setKey(c.getAttribute('data-k')); }); });
 })();
 </script>
