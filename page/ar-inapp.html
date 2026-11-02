@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>내 방에 놓아보기 · Design:Gym</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:-apple-system,system-ui,"Apple SD Gothic Neo",sans-serif;-webkit-user-select:none;user-select:none}
+  #cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+  #gl{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+  #top{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;display:flex;justify-content:space-between;align-items:center;color:#fff;z-index:5;background:linear-gradient(#0008,#0000)}
+  #top b{font-size:15px;letter-spacing:.04em}
+  #top{z-index:12}
+  #home{display:flex;align-items:center;gap:4px;height:38px;padding:0 14px 0 10px;border-radius:19px;background:#fff;color:#111;border:0;font-size:14px;font-weight:700;box-shadow:0 2px 10px #0004;font-family:inherit}
+  #home svg{flex:0 0 auto}
+  #x{width:40px;height:40px;border-radius:50%;background:#fff;border:0;color:#111;font-size:26px;font-weight:400;line-height:40px;text-align:center;padding:0;box-shadow:0 2px 10px #0004}
+  #prog{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#000a;color:#fff;font-size:12px;font-weight:600;z-index:6;white-space:nowrap;backdrop-filter:blur(6px)}
+  #prog i{width:10px;height:10px;border-radius:50%;border:2px solid #fff5;border-top-color:#fff;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #savetip{color:#fff;font-size:14px;text-align:center;padding:10px 14px 0;line-height:1.5;display:none}
+  #dbg{position:fixed;left:14px;top:calc(env(safe-area-inset-top) + 50px);color:#fffb;font-size:11px;z-index:5;text-shadow:0 1px 4px #000;white-space:pre-line}
+  #ring{position:fixed;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;z-index:4;pointer-events:none;transition:opacity .3s}
+  #ring:before,#ring:after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #fff;animation:pulse 1.6s ease-out infinite}
+  #ring:after{animation-delay:.8s}
+  #ring i{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff}
+  @keyframes pulse{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.6);opacity:0}}
+  #hint{position:fixed;left:0;right:0;top:calc(50% + 58px);text-align:center;color:#fff;font-size:16px;font-weight:600;text-shadow:0 1px 6px #000a;z-index:4;padding:0 30px;line-height:1.5;pointer-events:none;transition:opacity .3s}
+  #hint small{display:block;font-weight:400;font-size:13px;opacity:.85;margin-top:6px}
+  #tip{position:fixed;left:0;right:0;bottom:150px;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 6px #000a;z-index:4;pointer-events:none;opacity:0;transition:opacity .4s}
+  #bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(env(safe-area-inset-bottom) + 14px);z-index:5;background:linear-gradient(#0000,#000a)}
+  #chips{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+  .chip{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;padding:0;border:0;background:none;font-family:inherit}
+  .chip i{display:block;width:40px;height:40px;border-radius:50%;border:3px solid #fff5;transition:transform .15s,border-color .15s}
+  .chip span{font-size:12px;font-weight:600;color:#fffc;white-space:nowrap;text-shadow:0 1px 4px #000c;letter-spacing:.01em}
+  .chip.on i{border-color:#fff;transform:scale(1.12)}
+  .chip.on span{color:#fff;font-weight:800}
+  #acts{display:flex;gap:10px}
+  #acts button{flex:1;height:50px;border:0;border-radius:12px;font-size:15px;font-weight:700;background:#fff;color:#111}
+  #acts button.ghost{background:#fff2;color:#fff}
+  #acts button.sq{flex:0 0 50px;font-size:22px}
+  #start{position:fixed;inset:0;z-index:10;background:#111;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+  #start h1{font-size:20px;margin:0 0 10px}
+  #start p{font-size:14px;color:#bbb;line-height:1.6;margin:0 0 26px}
+  #start button{width:100%;max-width:320px;height:54px;border:0;border-radius:14px;background:#fff;color:#111;font-size:17px;font-weight:700}
+  #err{position:fixed;left:14px;right:14px;bottom:120px;background:#c33;color:#fff;padding:10px 12px;border-radius:10px;font-size:13px;z-index:6;display:none}
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9;transition:opacity .25s}
+  #shot{position:fixed;inset:0;z-index:13;background:#000;display:none;flex-direction:column}
+  #shot img{flex:1;object-fit:contain;min-height:0;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+  #shot div{display:flex;gap:10px;padding:12px 14px calc(env(safe-area-inset-bottom) + 14px)}
+  #shot button{flex:1;height:50px;border:0;border-radius:12px;font-size:15px;font-weight:700;background:#fff;color:#111}
+  #shot button.ghost{background:#fff2;color:#fff}
+  .mbi-simpletalk-kakao,[class*=simpletalk]{display:none !important}
+</style>
+</head>
+<body>
+<video id="cam" playsinline autoplay muted></video>
+<canvas id="gl"></canvas>
+
+<div id="top"><button id="home" aria-label="디자인짐으로 돌아가기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>디자인짐으로 돌아가기</button><button id="x" aria-label="닫기">×</button></div>
+<div id="prog"><i></i><span id="progt"></span></div>
+<div id="dbg"></div>
+<div id="ring"><i></i></div>
+<div id="hint">바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small></div>
+<div id="tip">한 손가락으로 옮기기 · 두 손가락으로 비틀어 돌리기</div>
+<div id="err"></div>
+<div id="flash"></div>
+
+<div id="bottom">
+  <div id="chips"></div>
+  <div id="acts">
+    <button id="rot" class="ghost sq" aria-label="90도 회전">↻</button>
+    <button id="reset" class="ghost">다시 놓기</button>
+    <button id="snap">사진 저장</button>
+  </div>
+</div>
+
+<div id="shot"><img id="shotimg" alt=""><p id="savetip">사진을 <b>길게 눌러</b> ‘사진 앱에 저장’을 선택하세요</p><div><button id="shotclose" class="ghost">닫기</button><a id="shotdl" download="designgym-ar.jpg" style="flex:1"><button style="width:100%">저장하기</button></a></div></div>
+
+<div id="start">
+  <h1>내 방에 매트를 놓아볼게요</h1>
+  <p>카메라와 움직임 센서 권한을 허용해 주세요.<br>앱을 나가지 않고 바로 볼 수 있습니다.</p>
+  <button id="go">카메라 켜기</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+(function(){
+  'use strict';
+  var BASE = 'https://nyangnyang.kr/ar';
+  var COLORS = [
+    { key:'active_steps',   label:'Active steps',   sw:'#2f3542' },
+    { key:'before_sunrise', label:'Before sunrise', sw:'#d9b7a7' },
+    { key:'warm_sunlight',  label:'Warm sunlight',  sw:'#e7c86a' }
+  ];
+  var EYE_H = 1.3;           // 바닥에서 폰까지 높이(m). 탭할 때 깊이 추정으로 자동 계산되고, 실패하면 이 값
+  var q = (location.search.match(/[?&]c=([a-z_]+)/)||[])[1];
+  var cur = COLORS.some(function(c){ return c.key===q; }) ? q : COLORS[0].key;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var cam = $('cam'), gl = $('gl'), hint = $('hint'), ring = $('ring'), tip = $('tip'), errEl = $('err'), dbg = $('dbg');
+  if (!/[?&](debug|diag)=1/.test(location.search)) dbg.style.display = 'none';   // 진단 글씨는 ?debug=1 일 때만
+  function err(m){ errEl.textContent = m; errEl.style.display='block'; setTimeout(function(){ errEl.style.display='none'; }, 4000); }
+  var HINT_DEFAULT = '바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small>';
+
+  /* ---------- three.js ---------- */
+  var renderer = new THREE.WebGLRenderer({ canvas: gl, alpha:true, antialias:true, preserveDrawingBuffer:true });
+  var IS_AND = /Android/i.test(navigator.userAgent);
+  var IS_IOS_P = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), shotFile = null;
+  renderer.setPixelRatio(Math.min(IS_AND ? 1.5 : 2, window.devicePixelRatio||1));   // 안드로이드는 GPU를 AI와 나눠 쓰므로 렌더 해상도를 조금 낮춤
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .78;
+  var scene = new THREE.Scene();
+  // 카메라 화각(세로). 안드로이드 기본 카메라가 아이폰보다 넓어서 70°로 그리면 매트가 실제보다 크게 보임 → 88°
+  var FOV = +((location.search.match(/[?&]fov=([0-9.]+)/)||[])[1]) || (IS_AND ? 88 : 70);
+  var camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 50);
+  camera.position.set(0, EYE_H, 0);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x665544, .42));
+  var sun = new THREE.DirectionalLight(0xffffff, .22); sun.position.set(1, 3, 1); scene.add(sun);
+
+  function shadowTexture(){
+    var c = document.createElement('canvas'); c.width = 512; c.height = 256; var x = c.getContext('2d');
+    var w = 512, h = 256, steps = 18, maxPad = 76, minPad = 22;
+    for (var i = 0; i < steps; i++){
+      var t = i / (steps - 1), pad = maxPad - (maxPad - minPad) * t, r = 30;
+      x.fillStyle = 'rgba(0,0,0,' + (0.028 + 0.012 * t) + ')';
+      x.beginPath(); x.moveTo(pad+r, pad); x.arcTo(w-pad, pad, w-pad, h-pad, r); x.arcTo(w-pad, h-pad, pad, h-pad, r); x.arcTo(pad, h-pad, pad, pad, r); x.arcTo(pad, pad, w-pad, pad, r); x.closePath(); x.fill();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  var shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent:true, depthWrite:false }));
+  shadow.rotation.x = -Math.PI/2; shadow.position.y = -.004; shadow.renderOrder = -1;
+
+  var mat = null, placed = false, loading = {}, ready = {}, matSize = { x:1.83, z:0.61 };
+  var loader = new THREE.GLTFLoader();
+  function useHolder(holder){
+    if (mat === holder) return;
+    if (mat){ holder.position.copy(mat.position); holder.rotation.copy(mat.rotation); holder.visible = mat.visible; scene.remove(mat); }
+    else holder.visible = false;
+    mat = holder; scene.add(mat);
+    matSize = holder.userData.size;
+    shadow.scale.set(matSize.x * 1.12, matSize.z * 1.4, 1);
+    holder.add(shadow);
+  }
+  function loadMat(key){
+    if (ready[key]){ useHolder(ready[key]); return; }
+    if (loading[key]) return;
+    loading[key] = true;
+    loader.load(BASE + '/models/mat_' + key + '.glb', function(g){
+      var obj = g.scene;
+      obj.traverse(function(n){
+        if (!n.isMesh) return;
+        (Array.isArray(n.material) ? n.material : [n.material]).forEach(function(m){
+          if (!m) return;
+          if (m.isMeshBasicMaterial) m.color.multiplyScalar(.78);
+          if (m.emissive) m.emissive.multiplyScalar(.5);
+          m.needsUpdate = true;
+        });
+      });
+      var box = new THREE.Box3().setFromObject(obj);
+      var size = new THREE.Vector3(); box.getSize(size);
+      obj.position.sub(box.getCenter(new THREE.Vector3())); obj.position.y += size.y/2;
+      var holder = new THREE.Group(); holder.add(obj); holder.userData.size = { x:size.x, z:size.z };
+      ready[key] = holder; loading[key] = false;
+      if (key === cur) useHolder(holder);
+    }, undefined, function(){ loading[key] = false; err('매트 모델을 불러오지 못했어요'); });
+  }
+
+  /* ---------- 자이로 → 카메라 회전 ---------- */
+  var zee = new THREE.Vector3(0,0,1), euler = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5));
+  var ori = null, haveOri = false;
+  function screenAngle(){ var a = (screen.orientation && screen.orientation.angle) || window.orientation || 0; return a * Math.PI/180; }
+  function applyOri(){
+    if (!ori) return;
+    var a = THREE.MathUtils.degToRad(ori.alpha||0), b = THREE.MathUtils.degToRad(ori.beta||0), g = THREE.MathUtils.degToRad(ori.gamma||0), o = screenAngle();
+    euler.set(b, a, -g, 'YXZ');
+    camera.quaternion.setFromEuler(euler);
+    camera.quaternion.multiply(q1);
+    camera.quaternion.multiply(q0.setFromAxisAngle(zee, -o));
+  }
+  window.addEventListener('deviceorientation', function(e){ if (e.alpha===null && e.beta===null) return; ori = e; haveOri = true; }, true);
+
+  /* ---------- 깊이 추정: 별도 스레드(Worker)에서 계속 돌며 폰 높이를 잰다 ---------- */
+  /* 모델 파일 출처 — 1차 GitHub(jsDelivr CDN, 트래픽 제한 없음) → 실패하면 2차 Supabase(예전 서버).
+     ▶ 예전 서버로만 받게 하려면 SRC 를 'supa' 로 바꾸면 된다 (주소 뒤 ?src=supa 로 저장 없이 확인 가능). */
+  var SRC = (location.search.match(/[?&]src=(cdn|supa)/)||[])[1] || 'cdn';
+  var CDN_BASE = 'https://cdn.jsdelivr.net/gh/koreanolleh/designgym-ar@main/v1/';
+  var DEPTH_BASE = 'https://udxqbfyxacfddkazolhq.supabase.co/storage/v1/object/public/ar/', DEPTH_VER = '2';
+  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var ORT_VER = IS_IOS ? '1.20.1' : '1.31.1';   // iOS: 검증된 1.20+fp16 / Android(Adreno): 1.31+fp32 (1.20은 Adreno에서 첫 실행이 안 끝남)
+  // cdn: GitHub 파일(pk_* 는 int8 팩 → 폰에서 fp16 복원) / supa: 예전 Supabase 파일(그대로). 복원 후에는 둘 다 완전히 같은 모델.
+  var MODELS = { webgpu: IS_IOS ? { name:'depth_fp16', parts:6, ver:'1', cdn:{ name:'pk_fp16', parts:4, pack:true }, w:378, h:518, cal:0.8 } : { name:'depth_gl2', parts:12, ver:'1', w:378, h:518, cal:0.8 },
+                 litert:{ name:'depth_lrt', parts:6, ver:'1', cdn:{ name:'pk_lrt', parts:4, pack:true }, w:378, h:518, cal:0.57 },
+                 wasm: IS_IOS ? { name:'depth_int8', parts:4, ver:'2', cdn:{ name:'depth_int8', parts:5 }, w:378, h:518, cal:0.8 } : { name:'depth_s_int8', parts:4, ver:'1', cdn:{ name:'depth_s_int8', parts:5 }, w:266, h:364, cal:0.62, fallback:{ name:'depth_int8', parts:4, ver:'2', cdn:{ name:'depth_int8', parts:5 }, w:378, h:518, cal:0.8 } } };
+  var LRT_CDN = 'https://cdn.jsdelivr.net/npm/@litertjs/core@2.6.0/';
+  var DW = 378, DH = 518;                       // 모델 입력 크기 (모델별로 initModel에서 설정)
+  var epForce = (location.search.match(/[?&]ep=(webgpu|wasm)/)||[])[1];
+  var OPT = (location.search.match(/[?&]opt=(disabled|basic|extended|all)/)||[])[1] || (IS_IOS ? 'all' : 'basic');   // Android(Adreno)는 융합 커널 버그 회피를 위해 기본 basic
+  var hideQ = (location.search.match(/[?&]hide=([a-z0-9,-]+)/)||[])[1];
+  var HIDE = hideQ === 'none' ? [] : hideQ ? hideQ.split(',') : (IS_IOS ? [] : ['subgroups','subgroups-f16','shader-f16']);   // Adreno 드라이버 버그 회피: 확장 기능 숨김
+  var epForce2 = (location.search.match(/[?&]ep=(litert)/)||[])[1];
+  var depthState = 'idle', worker = null, ep = epForce2 || epForce || ((window.navigator && navigator.gpu) ? (IS_IOS ? 'webgpu' : 'litert') : 'wasm'), runErrs = 0;
+  var lrt = null, lrtModel = null, why = '';   // why: 엔진 전환 사유(디버그 표시)   // LiteRT.js (Android GPU 경로: ORT WebGPU가 Adreno에서 깨져서 TFLite 런타임 사용)
+  var targetH = EYE_H, measured = 0, firstDone = false, inflight = false, snapQ = null, sentAt = 0, stalls = 0;
+  var CAL_Q = +((location.search.match(/[?&]cal=([0-9.]+)/)||[])[1]) || 0, CAL = CAL_Q || 0.8;   // 모델이 높이를 크게 보는 경향 보정 (모델별 기본값, URL cal=로 덮어쓰기)
+  /* ---- 다운로드 진행 표시 ---- */
+  var prog = $('prog'), progT = $('progt'), progBytes = {}, progTotal = 0, PROG_MSG = '실제 크기 맞추는 중…';
+  function setProg(phase, frac){ progT.textContent = phase + (frac != null ? ' ' + Math.round(frac*100) + '%' : ''); prog.style.display = phase ? 'flex' : 'none'; }
+  function dlProgress(){ var got = 0; for (var k in progBytes) got += progBytes[k]; setProg(PROG_MSG, progTotal ? Math.min(.85, got/progTotal*.85) : 0); }
+  function readAll(r, key){
+    var len = +r.headers.get('content-length') || 0;
+    if (len) progTotal += len;
+    if (!r.body || !r.body.getReader) return r.arrayBuffer().then(function(ab){ if (!len) progTotal += ab.byteLength; progBytes[key] = ab.byteLength; dlProgress(); return ab; });
+    var rd = r.body.getReader(), chunks = [], got = 0;
+    return new Promise(function(res, rej){
+      (function pump(){ rd.read().then(function(x){
+        if (x.done){ var out = new Uint8Array(got), o = 0; chunks.forEach(function(c){ out.set(c, o); o += c.length; }); if (!len) progTotal += got; progBytes[key] = got; dlProgress(); res(out.buffer); return; }
+        chunks.push(x.value); got += x.value.length; progBytes[key] = got; dlProgress(); pump();
+      })['catch'](rej); })();
+    });
+  }
+  function fetchPart(src, i){
+    var url = src.url(i), key = src.name + i;
+    var fromNet = function(){ return fetch(url).then(function(r){ if (!r.ok) throw new Error('part '+i+' '+r.status); return readAll(r, key); }); };
+    if (!window.caches) return fromNet();
+    return caches.open('dg-' + src.name + '-' + src.ver).then(function(c){
+      return c.match(url).then(function(hit){
+        if (hit) return hit.arrayBuffer().then(function(ab){ progBytes[key] = ab.byteLength; progTotal += ab.byteLength; dlProgress(); return ab; });
+        return fetch(url).then(function(r){ if (!r.ok) throw new Error('part '+i+' '+r.status); return c.put(url, r.clone()).then(function(){ return readAll(r, key); }); });
+      });
+    })['catch'](function(e){ return fromNet(); });
+  }
+  // 출처 목록: cdn(GitHub) 우선, 실패 시 supa(Supabase). 한 출처의 모든 조각을 받은 뒤 팩이면 Worker에서 fp16 으로 복원한다.
+  function sourcesFor(model){
+    var supa = { name: model.name, parts: model.parts, ver: model.ver, pack: false, url: function(i){ return DEPTH_BASE + encodeURIComponent(model.name + '.part' + i) + '?v=' + model.ver; } };
+    if (SRC === 'supa' || !model.cdn) return [supa];
+    var c = model.cdn, cdn = { name: 'cdn_' + c.name, parts: c.parts, ver: '1', pack: !!c.pack, url: function(i){ return CDN_BASE + c.name + '.part' + i; } };
+    return [cdn, supa];
+  }
+  var UNPACK_SRC = "/* dg depth pack: int8(block64) + scales(fp16) \u2192 original fp16 model bytes. Pure JS, no deps. */\nfunction dgUnpack(ab, onProgress){\n  var u8 = new Uint8Array(ab), dv = new DataView(ab);\n  var hl = dv.getUint32(0, true), hdr = JSON.parse(new TextDecoder().decode(u8.subarray(4, 4 + hl)));\n  var p = 4 + hl, skel = u8.subarray(p, p + hdr.skel), q = new Int8Array(ab, p + hdr.skel, hdr.q);\n  var sF32 = new Float32Array(hdr.s / 4); new Uint8Array(sF32.buffer).set(u8.subarray(p + hdr.skel + hdr.q, p + hdr.skel + hdr.q + hdr.s));\n  var out = new Uint8Array(hdr.total), f16ok = typeof Float16Array !== 'undefined';\n  var F32 = new Float32Array(1), U32 = new Uint32Array(F32.buffer);\n  function f2h(v){ F32[0] = v; var x = U32[0], s = (x >>> 16) & 0x8000, e = (x >>> 23) & 0xff, m = x & 0x7fffff;\n    if (e === 0xff) return s | 0x7c00 | (m ? 0x200 : 0);\n    var ne = e - 127 + 15;\n    if (ne >= 31) return s | 0x7c00;\n    if (ne <= 0){ if (ne < -10) return s; m |= 0x800000; var sh = 14 - ne, r = m >>> sh, rem = m & ((1 << sh) - 1), half = 1 << (sh - 1); if (rem > half || (rem === half && (r & 1))) r++; return s | r; }\n    var r2 = m >>> 13, rem2 = m & 0x1fff, h2 = s | (ne << 10) | r2; if (rem2 > 0x1000 || (rem2 === 0x1000 && (r2 & 1))) h2++; return h2; }\n  var sk = 0, qi = 0, si = 0, cur = 0, T = hdr.tensors, done = 0;\n  for (var t = 0; t < T.length; t++){\n    var tn = T[t], off = tn.off, n = tn.n;\n    out.set(skel.subarray(sk, sk + off - cur), cur); sk += off - cur;\n    var nb = Math.ceil(n / 64), f32 = new Float32Array(n);\n    for (var bI = 0; bI < nb; bI++){ var sc = sF32[si + bI], base = bI * 64, end = Math.min(n, base + 64); for (var k = base; k < end; k++) f32[k] = q[qi + k] * sc; }\n    if (f16ok){ var f16 = new Float16Array(n); f16.set(f32); out.set(new Uint8Array(f16.buffer), off); }\n    else { for (var i = 0, o = off; i < n; i++, o += 2){ var h = f2h(f32[i]); out[o] = h & 255; out[o + 1] = h >> 8; } }\n    qi += n; si += nb; cur = off + n * 2; done += n;\n    if (onProgress && (t & 7) === 7) onProgress(done / (hdr.q || 1));\n  }\n  out.set(skel.subarray(sk), cur);\n  return out;\n}" + "\nself.onmessage=function(e){ try{ var out=dgUnpack(e.data.buf, function(f){ postMessage({p:f}); }); postMessage({out:out.buffer},[out.buffer]); }catch(err){ postMessage({err:String(err&&err.message||err)}); } };";
+  function unpackInWorker(buf){
+    return new Promise(function(res, rej){
+      var w = new Worker(URL.createObjectURL(new Blob([UNPACK_SRC], { type:'text/javascript' })));
+      w.onmessage = function(ev){ var m = ev.data; if (m.p != null){ setProg(PROG_MSG, .85 + m.p*.1); return; } w.terminate(); if (m.err) rej(new Error('unpack: ' + m.err)); else res(new Uint8Array(m.out)); };
+      w.onerror = function(e){ w.terminate(); rej(new Error('unpack worker: ' + (e.message||''))); };
+      w.postMessage({ buf: buf.buffer }, [buf.buffer]);
+    });
+  }
+  function fetchFrom(src){
+    var idx = []; for (var i = 0; i < src.parts; i++) idx.push(i);
+    return Promise.all(idx.map(function(i){ return fetchPart(src, i); })).then(function(parts){
+      var total = 0; parts.forEach(function(p){ total += p.byteLength; });
+      var buf = new Uint8Array(total), off = 0; parts.forEach(function(p){ buf.set(new Uint8Array(p), off); off += p.byteLength; });
+      return src.pack ? unpackInWorker(buf) : buf;
+    });
+  }
+  var prefetched = {};   // model.name → Promise<Uint8Array>  (페이지가 열리자마자 받기 시작)
+  function fetchModel(model){
+    if (prefetched[model.name]) return prefetched[model.name];
+    var srcs = sourcesFor(model), k = 0;
+    var tryNext = function(err){
+      if (k >= srcs.length) return Promise.reject(err);
+      var src = srcs[k++]; progBytes = {}; progTotal = 0;
+      return fetchFrom(src)['catch'](function(e){ why = (why ? why + ' · ' : '') + src.name + ' 실패: ' + String(e && e.message || e).slice(0,40); return tryNext(e); });
+    };
+    return (prefetched[model.name] = tryNext(null).then(null, function(e){ delete prefetched[model.name]; throw e; }));
+  }
+  var WORKER_SRC = [
+    "importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@" + ORT_VER + "/dist/ort.webgpu.min.js');",
+    "ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@" + ORT_VER + "/dist/'; ort.env.wasm.numThreads=1;",
+    "var sess=null, W=0, H=0, EP='wasm', fp16=false;",
+    "var mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225];",
+    "function hideFeatures(hide){ if(!self.navigator||!navigator.gpu||!hide||!hide.length) return;",
+    "  var orig=navigator.gpu.requestAdapter.bind(navigator.gpu);",
+    "  navigator.gpu.requestAdapter=function(o){ return orig(o).then(function(ad){ if(!ad) return ad;",
+    "    var feats=new Set(); ad.features.forEach(function(f){ if(hide.indexOf(f)<0) feats.add(f); });",
+    "    var rd=ad.requestDevice.bind(ad);",
+    "    return new Proxy(ad,{ get:function(t,k){ if(k==='features') return feats; if(k==='requestDevice') return function(d){ d=d||{}; if(d.requiredFeatures) d.requiredFeatures=[...d.requiredFeatures].filter(function(f){ return hide.indexOf(f)<0; }); return rd(d); }; var v=t[k]; return typeof v==='function'?v.bind(t):v; } }); }); }; }",
+    "self.onmessage=function(ev){ var m=ev.data;",
+    " if(m.type==='init'){ W=m.w; H=m.h; EP=m.ep; fp16=!!m.fp16; hideFeatures(m.hide);",
+    "  ort.InferenceSession.create(new Uint8Array(m.buf),{executionProviders:[EP], graphOptimizationLevel:m.opt||'all'}).then(function(s){ sess=s; var df=[]; try{ ort.env.webgpu.device.features.forEach(function(f){ df.push(f); }); }catch(e){} postMessage({type:'ready', ep:EP, feats:df.join(',')}); }).catch(function(e){ postMessage({type:'fail', ep:EP, msg:String(e&&e.message||e)}); }); return; }",
+    " if(m.type==='optest'){ hideFeatures(m.hide); var out=[]; var run=function(i){ if(i>=m.tests.length){ postMessage({type:'optest', out:out}); return; } var t=m.tests[i]; var bin=atob(t.b64), u8=new Uint8Array(bin.length); for(var k=0;k<bin.length;k++) u8[k]=bin.charCodeAt(k);",
+    "   var n=1; t.inshape.forEach(function(d){ n*=d; }); var x=new Float32Array(n); for(var k=0;k<n;k++) x[k]=Math.sin(k*0.01)*0.8;",
+    "   ort.InferenceSession.create(u8,{executionProviders:[m.ep], graphOptimizationLevel:m.opt||'all'}).then(function(s2){ return s2.run({x:new ort.Tensor('float32',x,t.inshape)}); }).then(function(o){ var y=o.y.data, sm=0, am=0, nan=0; for(var k=0;k<y.length;k++){ if(isNaN(y[k])||!isFinite(y[k])) nan++; else { sm+=y[k]; am+=Math.abs(y[k]); } } sm/=y.length; am/=y.length;",
+    "     var ok = nan===0 && Math.abs(am-t.absmean) <= 0.02*Math.max(1e-3,t.absmean)+1e-4 && Math.abs(sm-t.mean) <= 0.02*Math.max(1e-3,Math.abs(t.mean))+1e-4;",
+    "     out.push(t.name+':'+(ok?'OK':'FAIL')+(nan?' nan'+nan:'')+(ok?'':' gpu'+am.toFixed(3)+'/cpu'+t.absmean.toFixed(3))); run(i+1); }).catch(function(e){ out.push(t.name+':ERR '+String(e&&e.message||e).slice(0,40)); run(i+1); }); }; run(0); return; }",
+    " if(m.type==='run'){ if(!sess) return; var img=m.rgba, n=W*H, t=new Float32Array(3*n);",
+    "  for(var i=0,p=0;i<n;i++,p+=4){ t[i]=(img[p]/255-mean[0])/std[0]; t[n+i]=(img[p+1]/255-mean[1])/std[1]; t[2*n+i]=(img[p+2]/255-mean[2])/std[2]; }",
+    "  var t0=Date.now(); sess.run({pixel_values:new ort.Tensor('float32',t,[1,3,H,W])}).then(function(out){ var d=Float32Array.from(out.depth.data); postMessage({type:'depth', d:d, ms:Date.now()-t0, id:m.id},[d.buffer]); }).catch(function(e){ postMessage({type:'err', msg:String(e&&e.message||e)}); }); }",
+    "};"
+  ].join('\n');
+  function startWorker(){
+    if (worker){ try{ worker.terminate(); }catch(e){} }
+    worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type:'text/javascript' })));
+    worker.onerror = function(e){ onFail('worker: ' + String(e.message||'')); };
+    worker.onmessage = function(ev){
+      var m = ev.data;
+      if (m.type === 'ready'){ depthState = 'ready'; dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
+      else if (m.type === 'fail'){ onFail(m.msg, m.ep); }
+      else if (m.type === 'err'){
+        inflight = false; runErrs++;
+        dbg.textContent = '측정 오류(' + ep + '): ' + m.msg.slice(0,60);
+        if (ep === 'webgpu' && runErrs >= 2){ runErrs = 0; ep = 'wasm'; depthState = 'loading'; dbg.textContent = 'GPU 오류 반복 → CPU로 전환'; initModel(); }
+      }
+      else if (m.type === 'depth'){ onDepth(m.d, m.ms); }
+    };
+  }
+  function onFail(msg, failedEp){
+    if (failedEp === 'litert' && ep === 'litert'){ why = 'litert 초기화 실패: ' + String(msg).slice(0,40); ep = 'wasm'; dbg.textContent = 'GPU(LiteRT) 불가 → CPU로 전환: ' + String(msg).slice(0,50); initModel(); return; }
+    if (failedEp === 'webgpu' && ep === 'webgpu'){ ep = 'wasm'; dbg.textContent = 'GPU 불가 → CPU로 전환'; initModel(); return; }
+    depthState = 'failed'; dbg.textContent = 'AI 실패: ' + String(msg).slice(0, 60); setProg('');
+  }
+  function initLiteRt(buf){
+    dbg.textContent = 'AI 준비 중… (LiteRT 런타임)';
+    var imp = (lrt ? Promise.resolve(lrt) : import(LRT_CDN + '+esm').then(function(m){ return m.loadLiteRt(LRT_CDN + 'wasm/').then(function(){ lrt = m; return m; }); }));
+    return imp.then(function(m){
+      dbg.textContent = 'AI 준비 중… (GPU 컴파일)'; setProg(PROG_MSG, .97);
+      return m.loadAndCompile(buf, { accelerator:'webgpu' });
+    }).then(function(mod){
+      if (mod.isFullyAccelerated === false){ try{ mod.delete(); }catch(e){} throw new Error('GPU 미지원 연산 → 메인 스레드 CPU 실행은 피함'); }   // LiteRT가 CPU로 떨어지면 화면이 멈추므로 ORT Worker(CPU)로 보낸다
+      lrtModel = mod; depthState = 'ready';
+      dbg.textContent = 'AI 준비됨 (litert · webgpu) ' + gpuInfo;
+      setTimeout(measureOnce, 100);
+    });
+  }
+  function runLiteRt(img){
+    var n = DW*DH, t = new Float32Array(3*n), mean = [0.485,0.456,0.406], std = [0.229,0.224,0.225], d = img.data;
+    for (var i = 0, p = 0, o = 0; i < n; i++, p += 4, o += 3){ t[o] = (d[p]/255-mean[0])/std[0]; t[o+1] = (d[p+1]/255-mean[1])/std[1]; t[o+2] = (d[p+2]/255-mean[2])/std[2]; }   // NHWC
+    var inT = new lrt.Tensor(t, [1, DH, DW, 3]), t0 = performance.now();
+    return lrtModel.run(inT).then(function(outs){
+      inT.delete();
+      var o = outs[0];
+      return (o.accelerator === 'wasm' ? Promise.resolve(o) : o.moveTo('wasm')).then(function(c){
+        var y = Float32Array.from(c.toTypedArray()); try{ c.delete(); }catch(e){} try{ if (c !== o) o.delete(); }catch(e){}
+        return { d:y, ms:performance.now()-t0 };
+      });
+    });
+  }
+  function initModel(model){
+    model = model || MODELS[ep];
+    DW = model.w; DH = model.h; CAL = CAL_Q || model.cal || 0.8;
+    dbg.textContent = 'AI 준비 중… (' + ep + ' · ' + model.name + ')';
+    fetchModel(model).then(function(buf){
+      delete prefetched[model.name];   // 버퍼는 한 번 넘기면(transfer) 다시 못 쓰므로 캐시에서 제거
+      dbg.textContent = 'AI 준비 중… (모델 로드, ' + ep + ')';
+      if (ep === 'litert') return initLiteRt(buf);
+      startWorker();
+      worker.postMessage({ type:'init', buf:buf.buffer, w:DW, h:DH, ep:ep, opt:OPT, hide:HIDE }, [buf.buffer]);
+    })['catch'](function(e){ if (model.fallback){ initModel(model.fallback); return; } onFail(String(e && e.message || e), ep); });
+  }
+  var gpuInfo = '';
+  if (window.navigator && navigator.gpu && navigator.gpu.requestAdapter){
+    navigator.gpu.requestAdapter().then(function(ad){
+      if (!ad){ gpuInfo = 'adapter 없음'; return; }
+      var p = ad.info ? Promise.resolve(ad.info) : (ad.requestAdapterInfo ? ad.requestAdapterInfo() : Promise.resolve({}));
+      p.then(function(i){ gpuInfo = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join('/') + (ad.isFallbackAdapter ? ' [fallback]' : '') + ' f16:' + (ad.features && ad.features.has('shader-f16') ? 'y' : 'n'); });
+    })['catch'](function(e){ gpuInfo = 'adapter 오류'; });
+  }
+  var DIAG = /[?&]diag=1/.test(location.search);
+  var OPTESTS = DIAG ? [{"name":"conv14","b64":"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","inshape":[1,3,56,42],"mean":0.126702,"absmean":0.404475},{"name":"conv3","b64":"CAc67QUKPAoBeAoBdwoBYhIBeSIEQ29udioVCgxrZXJuZWxfc2hhcGVAA0ADoAEHKhEKBHBhZHNAAUABQAFAAaABBxIFY29udjMq0AQIBAgECAMIAxABQgF3SsAENB2AvYswyz0aFEM+H7DBuvgm9rx2axG9IsdBvh6qkbwfns08sQPYPSeexD0YmSq9/cXivAIt5j0EGo68eehQvQmYDj5ff9Q9yk72OhQ2c708BE6+6IpxPZeTt73Y+0i+H0kiPiy0hD3VROm9m7X4vXtfsj3yzrO9y7kEPnKAfD05yls9ZcMlPSjWnDwlVLQ9x/05vd/SDDyo/5k9wJlmPbm79L3C90y9vRjPPHEfJ72cuTU+Ggkhva3jhLxNlJ0932IHPYYEbrwM7pq9FQD3PJTO1D3GPEQ9Ol+fvYPYMT4sIRS+KBEivt24xD0uArk8GRNhvb/84L1gpm0+edc/PA3PWj2rNAI96xgyPQI5XT0dAJY97LAZvcLp7rzeRzK+bM6fvXkY3jxSBdY92V11PS6MC71SWQG+ZzOOvgjg6z0jWXG997A3vR+SVzzq7Q++UkUPvRo0Tz6pAU89ASYTPSUMIr6tvmU+t7ERvpfYRD7tlFi+0OgPPlKwJT7I1qi9wxYtPYA/YD1Fqqa9wGMUvivvBr7TmF09EnQLvEEjZ719/sU9yBpQPQG4mr2OAfa9+FNWPbQxXL2JiSI8u2khPu/ATT2gl7C9GJ2DPAgaw71xtiQ+zQVmvdPLqTwzGPw8PnWCPDCOSL4PHRS+XUg5vdvWAj3KvGG8GAbEvSIUCr5ceiS9RuM/vc0OUj35qAW9et52PYyRc703rtG8T48OvZA6oL05BoA93Z+mvRSqVb00me+7B9oEvuYXBb3wrJG9KhkIBBABQgFiShDr/B69QV/Eu4PSo708SbS8WhsKAXgSFgoUCAESEAoCCAEKAggECgIIFAoCCBBiGwoBeRIWChQIARIQCgIIAQoCCAQKAggUCgIIEEIECgAQCw==","inshape":[1,4,20,16],"mean":-0.099448,"absmean":0.257331},{"name":"conv1","b64":"CAc6qgIKKQoBeAoBdwoBYhIBeSIEQ29udioVCgxrZXJuZWxfc2hhcGVAAUABoAEHEgVjb252MSqQAQgICAQIAQgBEAFCAXdKgAH3AQY+zBIpu7mM6j2T7A09UIyePfSbnr1B4Ss8J2dbPHfuer3ng6i9apoYvmc0GT7rJce9YdoJPjZ8P719o7C93ft+PaNEgb0912g92FEIvSnIRD3VSMa9vUKqPaXfRz0vWLy9fVGHPgE8XT04i2o+EN4jPoaxmrzU3Si9w0ElvSopCAgQAUIBYkogGmU7vs2Bjr2WJso8EEIcPoFDnr0rpbQ9/EMAvhwocL1aGwoBeBIWChQIARIQCgIIAQoCCAQKAggUCgIIEGIbCgF5EhYKFAgBEhAKAggBCgIICAoCCBQKAggQQgQKABAL","inshape":[1,4,20,16],"mean":-0.034639,"absmean":0.119455},{"name":"convT","b64":"CAc6tQMKRAoBeAoBdwoBYhIBeSINQ29udlRyYW5zcG9zZSoVCgxrZXJuZWxfc2hhcGVAAkACoAEHKhAKB3N0cmlkZXNAAkACoAEHEgVjb252VCqQAggECAQIAggCEAFCAXdKgAIYczu9OEsYPWRQOz1sFsU9D96dPRI0xzy75B89YaoiPn5GUb0Tqp49aCc5voZ7KD1j8EW91M2GOXkC1T1P4IY8Ukm1PdzpFj52Xx89R9TvPWbCBb2WN1e6nhBWvRCa1T2gnCk9Y8NPvdBofTwuUNU9YayAu2lXwr3NH1g8V89KvrlxnT1mkyy9zDpAvaxXsz3tygu+BmJHPge1RL3XUla9liXRPQskkT2EAXs+GwWtvDRGRbxhexe+cwcIvce/k72i0De91poyvtULKj5pDxG+CHmPvqtj870rVXe9vW3rvb3u4D3x1WG8+l0mOzcEej0tTeo8HGnIPZQ4471vQ2C9KhkIBBABQgFiShDcY4g96sSBvqPRDL7YNE09WhsKAXgSFgoUCAESEAoCCAEKAggECgIICgoCCAhiGwoBeRIWChQIARIQCgIIAQoCCAQKAggUCgIIEEIECgAQCw==","inshape":[1,4,10,8],"mean":-0.05391,"absmean":0.139932},{"name":"matmul","b64":"CAc63AgKEQoBeAoBdxIBeSIGTWF0TXVsEgZtYXRtdWwqjAgIEAgQEAFCAXdKgAjDtUS9/7a/PVq4pT2SXvW9FpEmPZQb9j14jnE8UC/IvVwZtD2MIoI93UBePdGfkj39Upm+gGq0PRcnOT7d2DI9M+KdPHKhjj2DiQo9HHyFPd0+GjlqBZ29b6/Nvf9tzL19mQy+b6zavYlaND5VcJo9cAGAvaTnH70Najg8cEGGvT893TvaQJ89Wz5qu86hCT2wjbU9Ku7evOtM6Twvcf28gPc6u3ACBb0GoFi9BE6OPJUOaD2ItG88UEdMPeEgl71khva9LtIqPczgjD1OX6M78wkKPo/luT3HPok+mYCkvHKQzL18lJe9vqBnvYL7Qj15/Fy+BgUHPiIIxLxcLMq8qwzdvaslO7xKia06actHvPHgCj1ng3G9jHa3vV+YYD0hqCE83YehPIfj2D3Ta9G9OyevvUK9AD7m2Be+dBUGvoR/pz0zIsM8j2ksPL4sFrw96kw7n+oWvB7MCj7bFCO9fDKEvGbANz6fSTQ7+I5kPq7/K7z3BQw+2oEpvii7ezwGQCK+uvGsPTRl+L3Kdug8xCznvDQz7b2N0iW+elJRvY49Mj5HbPC809i7PQfruru8jbM9YxM7vlwlJb0xcMI9C72FvPmlDbw0UTC9lWTrPUi58zyQQJA7lLKDPdvvcD28Jq48gWoePtmMxbvTzeM8O62DveTydTw3liI+Ob2Dveko6L3pIsw9DL1zvBVLHTzI05O7DqIBPE4wrj1G2qu9GjbPvTg2CzzafyS+xpkMvvslPz4oIZs97M+DujiL/T1eHdW9Y0UBvdldfz3ZaLY9OxdSPYYcgr5iQ8a9N2hDPTjMEb1TD4I+V8K9PSCXZD1TwOS9GlJnuyOYxTxY+OY9pXS0PWKO0z2ZN729tpoQPipbDb63glu9oXEwPReVdbxOCc6930CovY+KHr6V5Vk9DhUBPhZ8JLye+yO9EMQWvhUGuz0EcGI+Og84voPK2b0/Lou9BiVnvec9ujyVTCU+jI/OPZgaWD23QpS9xEzlvfkto72khR4+CVLKuy0GN71fiJa8vuGoPZFvBr4U4hA+cy+APJ86sbzIYzU9MOmyPJ37DL1FBc+8bPGxvchthj2Y51m9e9fDvRrghzykGgg+aWqeuwoUeb2RbyU9wVFGPtWsFL7ejBw9yAGoPNPh7T0u8Mo9vfOYvJx+LL4sL6U9JwyrvXfkwb2lLus9y4q6vbymDz7fjwk9/bUCPRi2+zxLxie+9uY1vsCUsDzjp2g9lFkHPBJAqL0LBPg6nmcGvKcGxL1Yqc89Ji4xvh4mcT07ax09+8nOPUzjzb09JSY8yVNePsOXhz3RyiQ8KNdcPTAxDTwUWWA+3nLJPYRFDLy9tc48JBIgvf7G9z0x/A++WhcKAXgSEgoQCAESDAoCCAEKAghkCgIIEGIXCgF5EhIKEAgBEgwKAggBCgIIZAoCCBBCBAoAEAs=","inshape":[1,100,16],"mean":0.007385,"absmean":0.172636},{"name":"gemm","b64":"CAc6rQkKIQoBeAoBdwoBYhIBeSIER2VtbSoNCgZ0cmFuc0IYAaABAhIEZ2VtbSqMCAgQCBAQAUIBd0qACEJTJL5VXxU+vnpcPlTRPz24tTg8wpuGPT2EhL1gSIw8+v1+OwNSgD3/iR++c65PvRsOrT2TXIq9v3DLvbIbUT5kz3k79x9tvXpMLb7BXpU93y6PPW6+9LybvOG9GeMgu+4uq73W8MC9kRopvCNT170JDso8owh5Pez0q725Gwy+AuAfPj2RwL0BKIe98ICuPG+AdT2M+dG8yr08PXI+JL1Q5ca9Cg4SPgHRfj7Tqi0+BFZoPGi+Oz44shE9GH9DvXEHPz0Wpxq8tVfJvfH5t72cQqQ9uhU9vlR0dz2O3ia+XjVZvkNMPL6KZUk+P8GgvJ7bDTzrVBE+7FG/PXp9Dr72+LE9nOGWPIzzC71kMR87gQ0DPilytb3pMyQ9nih9upgHOL4sTaS90keePAvZBD6VEs09RZ50Pe33pr2+cTg+M1OwPIkazr301ZW8O423PSqwRzpAobU9WgniPbAOJD1SqK+9zu1dPN7/kzumZT4+DokmvqLkXLymPm+9X0IJPUqbeb4oVuQ9RTS0OrzlPL516RO9VG55Pdr2Ir7b76g5E5LYvUK7Y72QOy87TkiWPO7QQL2Ned88loWnPZB85LyxlxI+EbsVPquYL703oYK9TGkqvgdfT7w33RS9uIyfPeCWGr4xPeO8G2bGPb+Tlb2zIZy9rCoUvmMshj4fFZm90CcFvumgpL1dk569Iq/cvEcJqT3nYvS8hf68vfidFL6QPg87XWSLO3nEHD5kdxc8GDcivIUs173oovq8YZkzvYeeF72cdMS9839cPfBhabwsIaS8sYQvvlYySj1Ce0c9jNqrveDGyj1RwAu+nlMPu00s3rzy4Aa+hWebPNtXLj60n907Wqc9veEZNz0uNi08IfE1O1ZNLr08nBE+K+06PSOLWL0Y9DC8wbqXvfMneb17OIO9mE7ovbMvnz3Sa+68ffhiPeY9ib27y8W7AZ+RvVdjkz1Ogcu8066VvUQcKL530+E8xxORvUTSzrqkaUm9BGvDPbbhXj2WLTc9+1x8vQ7+Pj1ImS8+hG6qvSMujTw84Si+dzYPPhz8Ir2sRaA9ZXUwvmsROD6xLBK9UYBfPb4ZdzwbSNG8CaAsPovCKL7MtPQ8D4C6PUOqQ7trnEG8kMdpvIFr+70j33k7VAJSPTTJ4DtwDN+8ZJdIvcLM5LwDywA+4qtVvmBOgzuYPwa9IhMVPkHWtTtvDhg+gXxZvvg+PD1kbOU8A2QOPvgSKL67An68XXfYO+0TS722J/k9Z7kKvRRcUD5I5dc9ErvCPcAWZT1J2Nm9upMwvVWZaj2Bw4o9CtsFPr52P73PKLC9zfGvPcDPpb2x2rI9urT1PR3XOj3hdhK9RZ6GO2kVcz0qSQgQEAFCAWJKQO6AhToFG2E+sOPKvbZYzb10Eci98H1xvWIfX77R84C978qFvSujADyRISs9Dv/9vcRUuD2zjDg+jaCqvDM3IT5aEwoBeBIOCgwIARIICgIIZAoCCBBiEwoBeRIOCgwIARIICgIIZAoCCBBCBAoAEAs=","inshape":[100,16],"mean":-0.013813,"absmean":0.198551},{"name":"softmax","b64":"CAc6agolCgF4EgF5IgdTb2Z0bWF4KhQKBGF4aXMY////////////AaABAhIHc29mdG1heFobCgF4EhYKFAgBEhAKAggBCgIIBgoCCDIKAggyYhsKAXkSFgoUCAESEAoCCAEKAggGCgIIMgoCCDJCBAoAEAs=","inshape":[1,6,50,50],"mean":0.02,"absmean":0.02},{"name":"layernorm","b64":"CAc6+AEKKAoBeBIBbSIKUmVkdWNlTWVhbioUCgRheGVzQP///////////wGgAQcKDgoBeAoBbRIBZCIDU3ViCg8KAWQKAWQSAmQyIgNNdWwKKQoCZDISAXYiClJlZHVjZU1lYW4qFAoEYXhlc0D///////////8BoAEHChEKAXYKA2VwcxICdmUiA0FkZAoOCgJ2ZRICc2QiBFNxcnQKDwoBZAoCc2QSAXkiA0RpdhIJbGF5ZXJub3JtKg8IARABQgNlcHNKBL03hjVaFwoBeBISChAIARIMCgIIAQoCCGQKAghAYhcKAXkSEgoQCAESDAoCCAEKAghkCgIIQEIECgAQCw==","inshape":[1,100,64],"mean":-0.0,"absmean":0.861826},{"name":"resize","b64":"CAc60wEKYgoBeAoDcm9pCgZzY2FsZXMSAXkiBlJlc2l6ZSoyCh5jb29yZGluYXRlX3RyYW5zZm9ybWF0aW9uX21vZGUiDWFsaWduX2Nvcm5lcnOgAQMqEQoEbW9kZSIGbGluZWFyoAEDEgZyZXNpemUqCwgAEAFCA3JvaUoAKh4IBBABQgZzY2FsZXNKEAAAgD8AAIA/AAAAQAAAAEBaGwoBeBIWChQIARIQCgIIAQoCCAQKAggKCgIICGIbCgF5EhYKFAgBEhAKAggBCgIIBAoCCBQKAggQQgQKABAL","inshape":[1,4,10,8],"mean":0.500678,"absmean":0.501044},{"name":"act","b64":"CAc6bgoMCgF4EgFhIgRUYW5oCg8KAWESAWIiB1NpZ21vaWQKDgoBeAoBYhIBeSIDTXVsEgNhY3RaGwoBeBIWChQIARIQCgIIAQoCCAgKAggUCgIIEGIbCgF5EhYKFAgBEhAKAggBCgIICAoCCBQKAggQQgQKABAL","inshape":[1,8,20,16],"mean":0.068096,"absmean":0.251831},{"name":"reshape","b64":"CAc6lgEKIgoBeBIBdCIJVHJhbnNwb3NlKg8KBHBlcm1AAEACQAGgAQcKEgoBdAoBcxIBeSIHUmVzaGFwZRIHcmVzaGFwZSohCAMQB0IBc0oYAQAAAAAAAABAAAAAAAAAAGQAAAAAAAAAWhcKAXgSEgoQCAESDAoCCAEKAghkCgIIQGIXCgF5EhIKEAgBEgwKAggBCgIIQAoCCGRCBAoAEAs=","inshape":[1,100,64],"mean":0.007544,"absmean":0.507544},{"name":"concat","b64":"CAc6sQEKGQoBeAoCc3QKAmVuCgJheBIBYSIFU2xpY2UKHgoBYQoBeBIBeSIGQ29uY2F0KgsKBGF4aXMYAaABAhIGY29uY2F0KhIIARAHQgJzdEoIAAAAAAAAAAAqEggBEAdCAmVuSggKAAAAAAAAACoSCAEQB0ICYXhKCAEAAAAAAAAAWhcKAXgSEgoQCAESDAoCCAEKAghkCgIIQGIXCgF5EhIKEAgBEgwKAggBCgIIbgoCCEBCBAoAEAs=","inshape":[1,100,64],"mean":0.006929,"absmean":0.506929},{"name":"bmm","b64":"CAc6cwojCgF4EgJ4dCIJVHJhbnNwb3NlKg8KBHBlcm1AAEACQAGgAQcKEgoBeAoCeHQSAXkiBk1hdE11bBIDYm1tWhgKAXgSEwoRCAESDQoCCAYKAwjIAQoCCEBiGQoBeRIUChIIARIOCgIIBgoDCMgBCgMIyAFCBAoAEAs=","inshape":[6,200,64],"mean":0.004259,"absmean":16.087501},{"name":"reducemean","b64":"CAc6eQo5CgF4EgF5IgpSZWR1Y2VNZWFuKhQKBGF4ZXNA////////////AaABByoPCghrZWVwZGltcxgBoAECEgpyZWR1Y2VtZWFuWhcKAXgSEgoQCAESDAoCCAEKAghkCgIIQGIXCgF5EhIKEAgBEgwKAggBCgIIZAoCCAFCBAoAEAs=","inshape":[1,100,64],"mean":0.007544,"absmean":0.49836},{"name":"relu_add","b64":"CAc6YgoMCgF4EgFhIgRSZWx1Cg4KAWEKAXgSAXkiA0FkZBIIcmVsdV9hZGRaGwoBeBIWChQIARIQCgIIAQoCCAgKAggUCgIIEGIbCgF5EhYKFAgBEhAKAggBCgIICAoCCBQKAggQQgQKABAL","inshape":[1,8,20,16],"mean":0.256559,"absmean":0.756559}] : null;
+  function runDiag(){
+    startWorker();
+    worker.onmessage = function(ev){ var m = ev.data; if (m.type === 'optest'){ dbg.textContent = '연산 진단 (' + ep + ' · ort' + ORT_VER + ')\n' + m.out.join('\n'); } };
+    dbg.textContent = '연산 진단 중… (' + ep + ')';
+    worker.postMessage({ type:'optest', tests:OPTESTS, ep:(ep === 'litert' ? 'webgpu' : ep), opt:OPT, hide:HIDE });
+  }
+  function loadDepth(){
+    if (DIAG){ runDiag(); return; }
+    if (depthState !== 'idle') return;
+    if (!window.Worker){ depthState = 'failed'; dbg.textContent = 'Worker 미지원'; setProg(''); return; }
+    depthState = 'loading'; initModel();
+  }
+  // 페이지가 열리자마자(카메라 켜기 전) 모델 다운로드를 시작해 둔다 — 안내 읽고 권한 허용하는 동안 받아둠
+  if (!DIAG && window.Worker){ try{ fetchModel(MODELS[ep])['catch'](function(){}); }catch(e){} }
+  // 화면에 보이는 카메라 영역(object-fit:cover)을 그대로 모델 입력 크기로 그려 Worker에 보낸다
+  function measureOnce(){
+    if (depthState !== 'ready' || inflight) return;
+    var vw = cam.videoWidth, vh = cam.videoHeight; if (!vw || !vh){ setTimeout(measureOnce, 300); return; }
+    var W = innerWidth, H = innerHeight, s = Math.max(W/vw, H/vh), sw = W/s, sh = H/s, sx = (vw-sw)/2, sy = (vh-sh)/2;
+    var c = measureOnce.c || (measureOnce.c = document.createElement('canvas')); c.width = DW; c.height = DH; var x = c.getContext('2d', { willReadFrequently:true });
+    x.drawImage(cam, sx, sy, sw, sh, 0, 0, DW, DH);
+    var img = x.getImageData(0, 0, DW, DH);
+    var sm = 0, sq = 0, cnt = 0; for (var k = 0; k < img.data.length; k += 97){ sm += img.data[k]; sq += img.data[k]*img.data[k]; cnt++; }
+    inStat = 'in μ' + Math.round(sm/cnt) + ' σ' + Math.round(Math.sqrt(Math.max(0, sq/cnt - (sm/cnt)*(sm/cnt))));
+    snapQ = camera.quaternion.clone();           // 프레임 찍은 순간의 방향
+    inflight = true; sentAt = Date.now(); if (ep === 'wasm') dbg.textContent = '측정 중… (' + ep + ')';
+    if (ep === 'litert'){
+      runLiteRt(img).then(function(r){ onDepth(r.d, r.ms); })['catch'](function(e){
+        inflight = false; runErrs++; dbg.textContent = '측정 오류(litert ' + runErrs + '): ' + String(e && e.message || e).slice(0,60);
+        if (runErrs >= 3){ why = 'litert 오류×3: ' + String(e && e.message || e).slice(0,40); runErrs = 0; ep = 'wasm'; depthState = 'loading'; dbg.textContent = 'LiteRT 오류 반복 → CPU로 전환'; initModel(); }
+      });
+      return;
+    }
+    worker.postMessage({ type:'run', rgba:img.data, id:measured }, [img.data.buffer]);
+  }
+  // 스케줄러: 처음엔 3번 연속 측정해서 자리 잡고, 그 뒤엔 몸이 움직였다가 멈춘 직후에만 측정 (가만히 있으면 추론 안 함 → 화면 부드러움)
+  var lastMoveAt = 0, moved = false, lastMeasureAt = 0, pendingSecond = false, haveMotion = false, moves = 0, diag = '', inStat = '', lastMs = 0;
+  window.addEventListener('devicemotion', function(e){
+    var a = e.acceleration; if (!a || a.x === null) return;
+    haveMotion = true;
+    var mag = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+    if (mag > 3.5){ lastMoveAt = Date.now(); moved = true; moves++; }
+  }, true);
+  setInterval(function(){
+    if (depthState !== 'ready') return;
+    var now = Date.now();
+    if (inflight){
+      var limit = (ep === 'webgpu' || ep === 'litert') ? (measured ? 8000 : 90000) : 25000;   // GPU 첫 실행은 셰이더 컴파일 때문에 오래 걸릴 수 있음
+      if ((ep === 'webgpu' || ep === 'litert') && !measured && now - sentAt > 3000) dbg.textContent = 'GPU 첫 실행 준비 중… ' + Math.round((now - sentAt)/1000) + 's · ' + gpuInfo;
+      if (now - sentAt > limit){
+        inflight = false; stalls++;
+        dbg.textContent = '측정 지연 → 재시도 (' + stalls + ', ' + ep + ')';
+        if (stalls >= 3){ why = '응답 지연×3 (' + ep + ')'; stalls = 0; depthState = 'loading'; if (ep === 'litert' || ep === 'webgpu') ep = 'wasm'; dbg.textContent = 'AI 재시작 중… (' + ep + ')'; initModel(); return; }
+        measureOnce();
+      }
+      return;
+    }
+    if (measured < (ep === 'wasm' ? 1 : 3)){ measureOnce(); return; }           // 초기 안정화
+    var fast = lastMs > 0 && lastMs < 700;                                        // GPU가 빠르면(0.7초 미만) 주기적으로 재서 자세 변화에 바로 따라감
+    if (fast){ if (now - lastMeasureAt > (IS_AND ? 2500 : 2000) && (!IS_AND || now - lastMoveAt > 350)) measureOnce(); return; }   // 안드로이드: 폰을 움직이는 중엔 재지 않음(버벅임 방지)
+    if (moved && now - lastMoveAt > 600 && now - lastMeasureAt > 1500){ moved = false; pendingSecond = true; measureOnce(); return; }   // 움직임 멈춘 직후
+    if (now - lastMeasureAt > (haveMotion ? 8000 : 4000)) measureOnce();           // 안전장치
+  }, 150);
+  // 깊이 맵 + (프레임 찍은 순간의) 자이로 방향으로 바닥 픽셀들의 "폰 높이"를 구해 중앙값을 쓴다
+  function heightFromDepth(d, q){
+    var snap = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near, camera.far);
+    snap.quaternion.copy(q); snap.updateMatrixWorld();
+    var inv = q.clone().invert(), hs = [], v3 = new THREE.Vector3();
+    for (var v = Math.floor(DH*.45); v < DH; v += 4){
+      for (var u = Math.floor(DW*.08); u < DW*.92; u += 4){
+        v3.set((u+.5)/DW*2-1, -((v+.5)/DH*2-1), .5).unproject(snap);
+        var dir = v3.normalize();                                 // snap 위치는 원점
+        if (dir.y > -0.08) continue;                              // 바닥을 향하지 않는 방향
+        var z = -dir.clone().applyQuaternion(inv).z; if (z <= .1) continue;
+        var dist = d[v*DW+u] / z;                                 // 모델 깊이(z) → 광선 길이
+        hs.push(-dir.y * dist);                                   // 그 점이 바닥이면 = 폰 높이
+      }
+    }
+    var fwd = new THREE.Vector3(0,0,-1).applyQuaternion(q);
+    diag = '기울기 ' + Math.round(Math.asin(-fwd.y)*180/Math.PI) + '° · d↓' + d[(DH-8)*DW + (DW>>1)].toFixed(2) + ' d중' + d[(DH>>1)*DW + (DW>>1)].toFixed(2) + ' · cam ' + cam.videoWidth + 'x' + cam.videoHeight + ' · ' + inStat + ' · n' + hs.length;
+    if (hs.length < 50) return null;
+    hs.sort(function(a,b){ return a-b; });
+    var med = hs[Math.floor(hs.length*.5)], s = 0, n = 0;
+    for (var i = 0; i < hs.length; i++){ if (Math.abs(hs[i]-med) < med*.15){ s += hs[i]; n++; } }
+    var h = n ? s/n : med;
+    return Math.max(.3, Math.min(3.5, h));
+  }
+  var badGpu = 0;
+  function onDepth(d, ms){
+    inflight = false; lastMs = ms;
+    // GPU 결과 검증: 화면 전체가 거의 같은 값이거나 비정상적으로 크면(드라이버 버그) CPU로 자동 전환
+    var sm = 0, sq = 0, cnt = 0; for (var k = 0; k < d.length; k += 97){ sm += d[k]; sq += d[k]*d[k]; cnt++; }
+    var mu = sm/cnt, sd = Math.sqrt(Math.max(0, sq/cnt - mu*mu));
+    if ((ep === 'webgpu' || ep === 'litert') && (!(sd > 0.008 * mu) || mu > 20 || !(mu > 0.05))){
+      badGpu++; dbg.textContent = 'GPU 결과 이상 (' + badGpu + ') μ' + mu.toFixed(2) + ' σ' + sd.toFixed(3);
+      if (badGpu >= 3){ why = 'GPU 결과 이상 μ' + mu.toFixed(2) + ' σ' + sd.toFixed(3); badGpu = 0; measured = 0; ep = 'wasm'; depthState = 'loading'; dbg.textContent = 'GPU 결과 이상 → CPU로 전환'; initModel(); }
+      return;
+    }
+    var h = heightFromDepth(d, snapQ || camera.quaternion.clone());
+    if (h){ h = Math.max(.3, Math.min(2.2, h * CAL)); }
+    if (h){
+      measured++; stalls = 0; runErrs = 0; badGpu = 0;
+      if (!firstDone){ EYE_H = h; camera.position.y = h; firstDone = true; setProg(''); }
+      targetH = h;                                                // 실제 반영은 tick()에서 부드럽게
+      dbg.textContent = '폰 높이 ' + EYE_H.toFixed(2) + 'm (측정 ' + (h/CAL).toFixed(2) + '×' + CAL + ') · ' + (ms/1000).toFixed(1) + 's · #' + measured + ' · ' + ep + '/' + OPT + (HIDE.length ? '/h' : '') + ' · mv' + moves + '\n' + diag + (why ? '\n전환: ' + why : '');
+    } else dbg.textContent = '바닥이 안 보여요 · 높이 ' + EYE_H.toFixed(2) + 'm · ' + ep;
+    lastMeasureAt = Date.now();
+    if (pendingSecond){ pendingSecond = false; setTimeout(measureOnce, 350); }
+  }
+  function measureThenPlace(x, y){
+    if (depthState !== 'ready' || firstDone){ place(x, y); return; }
+    ring.style.opacity = 0; hint.innerHTML = '바닥까지 거리를 재는 중…<small>잠시만요</small>'; hint.style.opacity = 1;
+    var wait = function(){ if (firstDone || depthState !== 'ready') place(x, y); else setTimeout(wait, 150); };
+    wait();
+  }
+
+  /* ---------- 터치: 탭 놓기 / 한 손가락 이동 / 두 손가락 회전 ---------- */
+  var look = { yaw:0, pitch:-.6 };
+  var pts = {}, gest = null;
+  function ptArr(){ return Object.keys(pts).map(function(k){ return pts[k]; }); }
+  gl.addEventListener('pointerdown', function(e){
+    pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+    var p = ptArr();
+    if (p.length === 1) gest = { kind:'one', x:e.clientX, y:e.clientY, moved:false, t:Date.now(), yaw:look.yaw, pitch:look.pitch };
+    else if (p.length === 2 && mat){
+      var dx = p[1].x-p[0].x, dy = p[1].y-p[0].y;
+      gest = { kind:'two', a:Math.atan2(dy,dx), rot:mat.rotation.y };
+    }
+  });
+  gl.addEventListener('pointermove', function(e){
+    if (!pts[e.pointerId] || !gest) return;
+    pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+    var p = ptArr();
+    if (gest.kind === 'one' && p.length === 1){
+      var dx = e.clientX - gest.x, dy = e.clientY - gest.y;
+      if (Math.abs(dx)+Math.abs(dy) > 6) gest.moved = true;
+      if (!haveOri){ look.yaw = gest.yaw - dx*.005; look.pitch = Math.max(-1.4, Math.min(.4, gest.pitch - dy*.005)); }
+      else if (placed && mat && gest.moved){ var f = floorHit(e.clientX, e.clientY); if (f){ mat.position.x = f.x; mat.position.z = f.z; } }
+    } else if (gest.kind === 'two' && p.length === 2 && mat){
+      var ddx = p[1].x-p[0].x, ddy = p[1].y-p[0].y, a = Math.atan2(ddy,ddx);
+      mat.rotation.y = gest.rot - (a - gest.a);
+    }
+  });
+  function up(e){
+    delete pts[e.pointerId];
+    var p = ptArr();
+    if (gest && gest.kind === 'one' && p.length === 0){
+      var tap = !gest.moved && Date.now()-gest.t < 400; gest = null;
+      if (tap && !placed) measureThenPlace(e.clientX, e.clientY);
+    } else if (p.length === 0) gest = null;
+    else if (p.length === 1) gest = { kind:'one', x:p[0].x, y:p[0].y, moved:true, t:0, yaw:look.yaw, pitch:look.pitch };
+  }
+  gl.addEventListener('pointerup', up); gl.addEventListener('pointercancel', up);
+
+  function floorHit(x, y){
+    var ndc = new THREE.Vector2((x/innerWidth)*2-1, -(y/innerHeight)*2+1);
+    var rc = new THREE.Raycaster(); rc.setFromCamera(ndc, camera);
+    var dir = rc.ray.direction; if (dir.y >= -0.03) return null;
+    var t = -rc.ray.origin.y / dir.y; if (t > 8) return null;
+    return rc.ray.origin.clone().add(dir.multiplyScalar(t));
+  }
+  function place(x, y){
+    if (!mat) return false;
+    var p = floorHit(x, y);
+    if (!p){ hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; ring.style.opacity = 1; return false; }
+    mat.position.set(p.x, 0, p.z);
+    var f = new THREE.Vector3(); camera.getWorldDirection(f);
+    mat.rotation.y = Math.atan2(f.x, f.z) + Math.PI/2;
+    mat.visible = true; placed = true;
+    hint.style.opacity = 0; ring.style.opacity = 0;
+    tip.style.opacity = 1; setTimeout(function(){ tip.style.opacity = 0; }, 4000);
+    return true;
+  }
+
+  /* ---------- 루프 ---------- */
+  function resize(){ var w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize); resize();
+  function tick(){
+    if (haveOri) applyOri(); else camera.quaternion.setFromEuler(new THREE.Euler(look.pitch, look.yaw, 0, 'YXZ'));
+    if (firstDone && Math.abs(targetH - EYE_H) > .002){ EYE_H += (targetH - EYE_H) * .2; camera.position.y = EYE_H; }
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- UI ---------- */
+  var chips = $('chips');
+  COLORS.forEach(function(c){
+    var b = document.createElement('button'); b.className = 'chip' + (c.key===cur?' on':''); b.innerHTML = '<i style="background:' + c.sw + '"></i><span>' + c.label + '</span>'; b.title = c.label;
+    b.addEventListener('click', function(){ cur = c.key; [].forEach.call(chips.children, function(x){ x.className='chip'; }); b.className='chip on'; loadMat(cur); });
+    chips.appendChild(b);
+  });
+  $('rot').addEventListener('click', function(){ if (mat && placed) mat.rotation.y += Math.PI/2; });
+  $('reset').addEventListener('click', function(){ if (mat) mat.visible=false; placed=false; hint.innerHTML = HINT_DEFAULT; hint.style.opacity=1; ring.style.opacity=1; });
+  var PNO = { active_steps:29, before_sunrise:33, warm_sunlight:34 };
+  function goHome(){ location.href = 'https://m.designgym.co.kr/product/detail.html?product_no=' + (PNO[cur] || 29); }
+  $('home').addEventListener('click', goHome);
+  $('x').addEventListener('click', function(){ if (history.length > 1 && document.referrer && /designgym/.test(document.referrer)) history.back(); else goHome(); });
+
+  $('snap').addEventListener('click', function(){
+    try{
+      var c = document.createElement('canvas'); c.width = innerWidth*2; c.height = innerHeight*2; var ctx = c.getContext('2d');
+      var vw = cam.videoWidth||1, vh = cam.videoHeight||1, s = Math.max(c.width/vw, c.height/vh), dw = vw*s, dh = vh*s;
+      ctx.drawImage(cam, (c.width-dw)/2, (c.height-dh)/2, dw, dh);
+      ctx.drawImage(renderer.domElement, 0, 0, c.width, c.height);
+      ctx.fillStyle = '#fff'; ctx.font = '600 '+(c.width*.028)+'px -apple-system,system-ui,sans-serif'; ctx.textAlign='right'; ctx.shadowColor='#0008'; ctx.shadowBlur=8;
+      ctx.fillText('DESIGN:GYM', c.width-c.width*.04, c.height-c.height*.035);
+      var url = c.toDataURL('image/jpeg', .92);
+      $('shotimg').src = url; $('shotdl').href = url; $('shot').style.display='flex';
+      shotFile = null; $('savetip').style.display = 'none';
+      if (IS_IOS_P) c.toBlob(function(b){ try{ var f = new File([b], 'designgym-ar.jpg', { type:'image/jpeg' }); if (navigator.canShare && navigator.canShare({ files:[f] })) shotFile = f; }catch(e){} }, 'image/jpeg', .92);
+      $('flash').style.opacity = 1; setTimeout(function(){ $('flash').style.opacity = 0; }, 120);
+    }catch(e){ err('사진 저장에 실패했어요'); }
+  });
+  $('shotclose').addEventListener('click', function(){ $('shot').style.display='none'; });
+  /* 아이폰: download 링크는 '파일' 앱에 저장돼 사진첩에 안 보임 → 공유 시트('이미지 저장')로 사진첩에 저장, 안 되면 길게 눌러 저장 안내 */
+  $('shotdl').addEventListener('click', function(ev){
+    if (!IS_IOS_P) return;
+    ev.preventDefault();
+    if (shotFile){ navigator.share({ files:[shotFile] })['catch'](function(e){ if (!e || e.name !== 'AbortError') $('savetip').style.display = 'block'; }); return; }
+    $('savetip').style.display = 'block';
+  });
+
+  /* ---------- 시작 ---------- */
+  if (DIAG){ $('start').style.display = 'none'; runDiag(); }
+  $('go').addEventListener('click', function(){
+    var btn = this; btn.disabled = true; btn.textContent = '권한 확인 중…';
+    var askOri = (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
+      ? DeviceOrientationEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
+    var askMot = (typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function')
+      ? DeviceMotionEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
+    askOri.then(function(){ return askMot; }).then(function(){
+      return navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false });
+    }).then(function(st){
+      cam.srcObject = st; return cam.play()['catch'](function(){});
+    }).then(function(){
+      $('start').style.display = 'none'; loadMat(cur); tick(); loadDepth();
+    })['catch'](function(e){
+      btn.disabled = false; btn.textContent = '다시 시도';
+      err('카메라를 열 수 없어요. 권한을 허용해 주세요. (' + (e && e.name || e) + ')');
+    });
+  });
+})();
+</script>
+</body>
+</html>
