@@ -25,10 +25,10 @@
   .photo{margin:28px 0 0;position:relative}
   .photo{margin:0;position:relative}
   .photo>img{width:100%;display:block;aspect-ratio:4/4.4;object-fit:cover;object-position:center 60%}
-  .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0005 0%,#0000 35%);pointer-events:none}
+  .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0005 0%,#0000 35%,#0000 80%,#0004 100%);pointer-events:none}
   .plogo{position:absolute;left:0;right:0;top:max(26px,env(safe-area-inset-top));z-index:2;text-align:center}
   .plogo img{width:92px;opacity:.95}
-  .photo .vr{position:absolute;right:16px;top:max(26px,env(safe-area-inset-top));z-index:2;background:#0004;font-family:inherit;cursor:pointer;font-family:Jost,sans-serif;font-size:10.5px;letter-spacing:.2em;color:#fff;border:1px solid #fff9;padding:6px 9px 5px;border-radius:999px;background:#0003}
+  .photo .vr{position:absolute;right:18px;bottom:20px;z-index:2;background:#0006;font-family:inherit;cursor:pointer;font-family:Jost,sans-serif;font-size:10.5px;letter-spacing:.2em;color:#fff;border:1px solid #fff9;padding:6px 9px 5px;border-radius:999px;background:#0003}
   .cap{display:none;font-size:12px;color:#9a948b;text-align:center;margin:10px 0 0;font-family:Jost,sans-serif;letter-spacing:.08em}
   .sec{padding:28px 24px 0}
   .sec.dark{background:#1c1c1c;color:#fff;padding:34px 24px 34px;margin-top:30px}
@@ -94,7 +94,7 @@
       <a href="/product/detail.html?product_no=33&utm_source=instagram&utm_medium=bio"><img src="https://m.designgym.co.kr/web/product/big/202203/126021efda194a9b21f0e56a294864cd.jpg" alt=""><span>Before sunrise</span></a>
       <a href="/product/detail.html?product_no=34&utm_source=instagram&utm_medium=bio"><img src="https://m.designgym.co.kr/web/product/big/202203/e2c9b082476f49c988d4137280dd779a.jpg" alt=""><span>Warm sunlight</span></a>
     </div>
-    <a class="btn o" href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio&utm_content=buy">루틴 매트 더 자세히 보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="btn" href="/product/detail.html?product_no=29&utm_source=instagram&utm_medium=bio&utm_content=buy">루틴 매트 더 자세히 보기<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
   </section>
 
   <nav class="list">
@@ -106,7 +106,7 @@
 </div>
 <div id="ov" aria-hidden="true">
   <div class="top"><b>360° VIEW</b><button type="button" class="x" id="close360" aria-label="닫기">×</button></div>
-  <model-viewer id="mv" camera-controls auto-rotate rotation-per-second="20deg" shadow-intensity="0.9" exposure="0.5" tone-mapping="aces" camera-orbit="35deg 70deg auto" alt="루틴 매트 360도 보기"></model-viewer>
+  <model-viewer id="mv" camera-controls auto-rotate rotation-per-second="20deg" shadow-intensity="0.35" exposure="0.72" tone-mapping="aces" camera-orbit="35deg 70deg auto" alt="루틴 매트 360도 보기"></model-viewer>
   <div class="bot">
     <p class="hint">드래그해서 돌려보세요</p>
     <div class="chips">
