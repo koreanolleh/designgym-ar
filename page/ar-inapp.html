@@ -38,6 +38,9 @@
   #acts button{flex:1;height:50px;border:0;border-radius:12px;font-size:15px;font-weight:700;background:#fff;color:#111}
   #acts button.ghost{background:#fff2;color:#fff}
   #acts button.sq{flex:0 0 50px;font-size:22px}
+  #tapori{position:fixed;inset:0;z-index:11;display:none;align-items:center;justify-content:center;background:#0007;color:#fff;text-align:center}
+  #tapori b{display:block;font-size:18px;margin-bottom:6px}
+  #tapori small{font-size:13px;opacity:.85}
   #start{position:fixed;inset:0;z-index:10;background:#111;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
   #start h1{font-size:20px;margin:0 0 10px}
   #start p{font-size:14px;color:#bbb;line-height:1.6;margin:0 0 26px}
@@ -76,6 +79,7 @@
 
 <div id="shot"><img id="shotimg" alt=""><p id="savetip">사진을 <b>길게 눌러</b> ‘사진 앱에 저장’을 선택하세요</p><div><button id="shotclose" class="ghost">닫기</button><a id="shotdl" download="designgym-ar.jpg" style="flex:1"><button style="width:100%">저장하기</button></a></div></div>
 
+<div id="tapori"><div><b>화면을 한 번 톡 눌러주세요</b><small>폰 움직임을 따라 매트가 제자리에 고정돼요</small></div></div>
 <div id="start">
   <h1>내 방에 매트를 놓아볼게요</h1>
   <p>카메라와 움직임 센서 권한을 허용해 주세요.<br>앱을 나가지 않고 바로 볼 수 있습니다.</p>
@@ -580,25 +584,39 @@
     $('savetip').style.display = 'block';
   });
 
-  /* ---------- 시작 ---------- */
-  if (DIAG){ $('start').style.display = 'none'; runDiag(); }
+  /* ---------- 시작 ----------
+     버튼 없이 바로 카메라 권한을 묻는다. (안드로이드: 그대로 시작 / 아이폰: 링크·상품 페이지에서 누를 때 움직임 권한을 미리 받아두고,
+     못 받은 경우에만 '화면을 한 번 톡' 안내를 띄워 그 탭으로 권한을 받는다. 카메라를 못 열면 예전 '카메라 켜기' 화면을 보여준다) */
+  var needMotionAsk = typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function';
+  var started = false;
+  function askMotion(){
+    var a = needMotionAsk ? DeviceOrientationEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
+    var b = (typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function') ? DeviceMotionEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
+    return a.then(function(){ return b; });
+  }
+  function startCam(){
+    return navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false })
+      .then(function(st){ cam.srcObject = st; return cam.play()['catch'](function(){}); })
+      .then(function(){
+        if (started) return; started = true;
+        $('start').style.display = 'none'; loadMat(cur); tick(); loadDepth();
+        // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
+        if (needMotionAsk) setTimeout(function(){ if (!haveOri) $('tapori').style.display = 'flex'; }, 900);
+      });
+  }
+  $('tapori').addEventListener('click', function(){ $('tapori').style.display = 'none'; askMotion(); });
   $('go').addEventListener('click', function(){
     var btn = this; btn.disabled = true; btn.textContent = '권한 확인 중…';
-    var askOri = (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
-      ? DeviceOrientationEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
-    var askMot = (typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function')
-      ? DeviceMotionEvent.requestPermission()['catch'](function(){ return 'denied'; }) : Promise.resolve('granted');
-    askOri.then(function(){ return askMot; }).then(function(){
-      return navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }, audio:false });
-    }).then(function(st){
-      cam.srcObject = st; return cam.play()['catch'](function(){});
-    }).then(function(){
-      $('start').style.display = 'none'; loadMat(cur); tick(); loadDepth();
-    })['catch'](function(e){
+    askMotion().then(startCam)['catch'](function(e){
       btn.disabled = false; btn.textContent = '다시 시도';
       err('카메라를 열 수 없어요. 권한을 허용해 주세요. (' + (e && e.name || e) + ')');
     });
   });
+  if (DIAG){ $('start').style.display = 'none'; runDiag(); }
+  else {
+    $('start').style.visibility = 'hidden';                    // 바로 권한 창이 뜨도록 안내 화면은 숨겨두고
+    startCam()['catch'](function(){ $('start').style.visibility = 'visible'; });   // 안 되면 예전 '카메라 켜기' 화면
+  }
 })();
 </script>
 </body>
