@@ -159,6 +159,8 @@
           if (!m) return;
           if (m.isMeshBasicMaterial) m.color.multiplyScalar(.78);
           if (m.emissive) m.emissive.multiplyScalar(.5);
+          var tx = m.map, im = tx && tx.image;   // 3072px 텍스처를 폰에서 GPU에 올리면 화면이 잠깐 멈춤 → 1536px로 줄여서 올림(화면상 차이 거의 없음)
+          if (im && im.width > 1600){ try{ var cv = document.createElement('canvas'), sc = 1536 / im.width; cv.width = 1536; cv.height = Math.round(im.height * sc); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); tx.image = cv; tx.needsUpdate = true; }catch(e){} }
           m.needsUpdate = true;
         });
       });
@@ -189,7 +191,7 @@
       camera.quaternion.slerp(tq, ang > 0.35 ? 1 : (ang > 0.08 ? 0.5 : 0.28));
     }
   }
-  window.addEventListener('deviceorientation', function(e){ if (e.alpha===null && e.beta===null) return; ori = e; haveOri = true; }, true);
+  window.addEventListener('deviceorientation', function(e){ if (e.alpha===null && e.beta===null) return; ori = e; if (!haveOri){ var tp = document.getElementById('tapori'); if (tp) tp.style.display = 'none'; } haveOri = true; }, true);
 
   /* ---------- 깊이 추정: 별도 스레드(Worker)에서 계속 돌며 폰 높이를 잰다 ---------- */
   /* 모델 파일 출처 — 1차 GitHub(jsDelivr CDN, 트래픽 제한 없음) → 실패하면 2차 Supabase(예전 서버).
@@ -533,8 +535,8 @@
     var t = -rc.ray.origin.y / dir.y; if (t > 8) return null;
     return rc.ray.origin.clone().add(dir.multiplyScalar(t));
   }
-  function place(x, y){
-    if (!mat) return false;
+  function place(x, y, tries){
+    if (!mat){ loadMat(cur); tries = tries || 0; if (tries < 30) setTimeout(function(){ place(x, y, tries + 1); }, 200); return false; }   // 매트 파일이 아직이면 받는 대로 놓기
     var p = floorHit(x, y);
     if (!p){ hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; ring.style.opacity = 1; return false; }
     mat.position.set(p.x, 0, p.z);
@@ -609,9 +611,10 @@
       .then(function(st){ cam.srcObject = st; return cam.play()['catch'](function(){}); })
       .then(function(){
         if (started) return; started = true;
-        $('start').style.display = 'none'; loadMat(cur); tick(); loadDepth();
+        $('start').style.display = 'none'; tick(); loadDepth();
+        setTimeout(function(){ loadMat(cur); }, 1500);   // 시작할 때 무거운 일을 한꺼번에 몰지 않게: AI 먼저, 매트는 조금 뒤에
         // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
-        if (needMotionAsk) setTimeout(function(){ if (!haveOri) $('tapori').style.display = 'flex'; }, 900);
+        if (needMotionAsk) setTimeout(function(){ if (!haveOri) $('tapori').style.display = 'flex'; }, 300);   // 움직임 권한 안내를 빨리 띄움(신호가 오면 자동으로 닫힘)
       });
   }
   $('tapori').addEventListener('click', function(){ $('tapori').style.display = 'none'; askMotion(); });
