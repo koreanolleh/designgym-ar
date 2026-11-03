@@ -114,7 +114,8 @@
 
   var $ = function(id){ return document.getElementById(id); };
   var cam = $('cam'), gl = $('gl'), hint = $('hint'), ring = $('ring'), tip = $('tip'), errEl = $('err'), dbg = $('dbg');
-  if (!/[?&](debug|diag)=1/.test(location.search)) dbg.style.display = 'none';   // 진단 글씨는 ?debug=1 일 때만
+  if (!/[?&](debug|diag)=1/.test(location.search)) dbg.style.display = 'none';
+  var T0 = performance.now(), TM = {}; function mark(k){ if (!TM[k]) TM[k] = ((performance.now() - T0)/1000).toFixed(1); } function marks(){ var o = []; for (var k in TM) o.push(k + ' ' + TM[k] + 's'); return o.join(' · '); }   // 단계별 걸린 시간(디버그용)   // 진단 글씨는 ?debug=1 일 때만
   function err(m){ errEl.textContent = m; errEl.style.display='block'; setTimeout(function(){ errEl.style.display='none'; }, 4000); }
   var HINT_DEFAULT = '바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small>';
 
@@ -278,7 +279,7 @@
   function unpackInWorker(buf){
     return new Promise(function(res, rej){
       var w = new Worker(URL.createObjectURL(new Blob([UNPACK_SRC], { type:'text/javascript' })));
-      w.onmessage = function(ev){ var m = ev.data; if (m.p != null){ setProg(PROG_MSG, .3 + m.p*.15); return; } w.terminate(); if (m.err) rej(new Error('unpack: ' + m.err)); else res(new Uint8Array(m.out)); };
+      w.onmessage = function(ev){ var m = ev.data; if (m.p != null){ mark('dl'); setProg(PROG_MSG, .3 + m.p*.15); return; } mark('unpack'); w.terminate(); if (m.err) rej(new Error('unpack: ' + m.err)); else res(new Uint8Array(m.out)); };
       w.onerror = function(e){ w.terminate(); rej(new Error('unpack worker: ' + (e.message||''))); };
       if (Array.isArray(buf)) w.postMessage({ parts: buf }, buf);   // 조각 합치기도 Worker에서(메인 스레드에서 수십 MB 복사하면 화면이 1초가량 멈춤)
       else w.postMessage({ buf: buf.buffer }, [buf.buffer]);
@@ -334,7 +335,7 @@
     worker.onerror = function(e){ onFail('worker: ' + String(e.message||'')); };
     worker.onmessage = function(ev){
       var m = ev.data;
-      if (m.type === 'ready'){ depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
+      if (m.type === 'ready'){ mark('ready(ort)'); depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
       else if (m.type === 'fail'){ onFail(m.msg, m.ep); }
       else if (m.type === 'err'){
         inflight = false; runErrs++;
@@ -372,7 +373,7 @@
         var to = setTimeout(function(){ back('init timeout'); }, 25000);
         w.onerror = function(e){ clearTimeout(to); back('worker ' + (e && e.message || '')); };
         w.onmessage = function(ev){ var m = ev.data;
-          if (m.type === 'ready'){ if (settled) return; settled = true; clearTimeout(to); lrtW = w; depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (litert · webgpu · worker) ' + gpuInfo; setTimeout(measureOnce, 100); }
+          if (m.type === 'ready'){ if (settled) return; settled = true; clearTimeout(to); lrtW = w; mark('ready(w)'); depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (litert · webgpu · worker) ' + gpuInfo; setTimeout(measureOnce, 100); }
           else if (m.type === 'fail'){ clearTimeout(to); back(m.msg); }
           else if (m.type === 'depth'){ onDepth(m.d, m.ms); }
           else if (m.type === 'err'){ inflight = false; runErrs++; dbg.textContent = '측정 오류(litert-w ' + runErrs + '): ' + String(m.msg).slice(0,60);
@@ -390,7 +391,7 @@
       return m.loadAndCompile(buf, { accelerator:'webgpu' });
     }).then(function(mod){
       if (mod.isFullyAccelerated === false){ try{ mod.delete(); }catch(e){} throw new Error('GPU 미지원 연산 → 메인 스레드 CPU 실행은 피함'); }   // LiteRT가 CPU로 떨어지면 화면이 멈추므로 ORT Worker(CPU)로 보낸다
-      lrtModel = mod; depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800);
+      lrtModel = mod; mark('ready(main)'); depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800);
       dbg.textContent = 'AI 준비됨 (litert · webgpu) ' + gpuInfo;
       setTimeout(measureOnce, 100);
     });
@@ -409,7 +410,7 @@
     });
   }
   function initModel(model){
-    model = model || MODELS[ep];
+    model = model || MODELS[ep]; mark('init');
     DW = model.w; DH = model.h; CAL = CAL_Q || model.cal || 0.8;
     dbg.textContent = 'AI 준비 중… (' + ep + ' · ' + model.name + ')';
     fetchModel(model).then(function(buf){
@@ -543,9 +544,9 @@
     if (h){ h = Math.max(.3, Math.min(2.2, h * CAL)); }
     if (h){
       measured++; stalls = 0; runErrs = 0; badGpu = 0;
-      if (!firstDone){ EYE_H = h; camera.position.y = h; firstDone = true; setProg(PROG_MSG, 1); setTimeout(function(){ setProg(''); }, 450); }
+      if (!firstDone){ mark('first'); EYE_H = h; camera.position.y = h; firstDone = true; setProg(PROG_MSG, 1); setTimeout(function(){ setProg(''); }, 450); }
       targetH = h;                                                // 실제 반영은 tick()에서 부드럽게
-      dbg.textContent = '폰 높이 ' + EYE_H.toFixed(2) + 'm (측정 ' + (h/CAL).toFixed(2) + '×' + CAL + ') · ' + (ms/1000).toFixed(1) + 's · #' + measured + ' · ' + ep + '/' + OPT + (HIDE.length ? '/h' : '') + ' · mv' + moves + '\n' + diag + (why ? '\n전환: ' + why : '');
+      dbg.textContent = '폰 높이 ' + EYE_H.toFixed(2) + 'm (측정 ' + (h/CAL).toFixed(2) + '×' + CAL + ') · ' + (ms/1000).toFixed(1) + 's · #' + measured + ' · ' + ep + '/' + OPT + (HIDE.length ? '/h' : '') + ' · mv' + moves + '\n' + marks() + '\n' + diag + (why ? '\n전환: ' + why : '');
     } else dbg.textContent = '바닥이 안 보여요 · 높이 ' + EYE_H.toFixed(2) + 'm · ' + ep;
     lastMeasureAt = Date.now();
     if (pendingSecond){ pendingSecond = false; setTimeout(measureOnce, 350); }
