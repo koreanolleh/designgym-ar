@@ -25,6 +25,8 @@
   #ring i{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff}
   @keyframes pulse{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.6);opacity:0}}
   #hint{position:fixed;left:0;right:0;top:calc(50% + 58px);text-align:center;color:#fff;font-size:16px;font-weight:600;text-shadow:0 1px 6px #000a;z-index:4;padding:0 30px;line-height:1.5;pointer-events:none;transition:opacity .3s}
+  #hint.blink{animation:hintBlink 1.6s ease-in-out infinite}
+  @keyframes hintBlink{0%,100%{filter:none;transform:scale(1)}50%{filter:brightness(1.25);transform:scale(1.04)}}
   #hint small{display:block;font-weight:400;font-size:13px;opacity:.85;margin-top:6px}
   #tip{position:fixed;left:0;right:0;bottom:150px;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 6px #000a;z-index:4;pointer-events:none;opacity:0;transition:opacity .4s}
   #bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(env(safe-area-inset-bottom) + 14px);z-index:5;background:linear-gradient(#0000,#000a)}
@@ -63,7 +65,7 @@
 <div id="prog"><i></i><span id="progt"></span></div>
 <div id="dbg"></div>
 <div id="ring"><i></i></div>
-<div id="hint">바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small></div>
+<div id="hint" class="blink">바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small></div>
 <div id="tip">한 손가락으로 옮기기 · 두 손가락으로 비틀어 돌리기</div>
 <div id="err"></div>
 <div id="flash"></div>
@@ -175,7 +177,7 @@
 
   /* ---------- 자이로 → 카메라 회전 ---------- */
   var zee = new THREE.Vector3(0,0,1), euler = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5));
-  var ori = null, haveOri = false;
+  var ori = null, haveOri = false, askedOri = false;
   function screenAngle(){ var a = (screen.orientation && screen.orientation.angle) || window.orientation || 0; return a * Math.PI/180; }
   function applyOri(){
     if (!ori) return;
@@ -564,11 +566,17 @@
     var p = ptArr();
     if (gest && gest.kind === 'one' && p.length === 0){
       var tap = !gest.moved && Date.now()-gest.t < 400; gest = null;
-      if (tap && !placed) measureThenPlace(e.clientX, e.clientY);
+      if (tap && !placed){
+        if (needMotionAsk && !haveOri){   // 권한 허용 → 방향 신호가 오면 그 자리에 바로 놓기
+          var tx = e.clientX, ty = e.clientY, t0 = Date.now();
+          (function waitOri(){ if (haveOri) measureThenPlace(tx, ty); else if (Date.now() - t0 < 6000) setTimeout(waitOri, 100); else measureThenPlace(tx, ty); })();
+        } else measureThenPlace(e.clientX, e.clientY);
+      }
     } else if (p.length === 0) gest = null;
     else if (p.length === 1) gest = { kind:'one', x:p[0].x, y:p[0].y, moved:true, t:0, yaw:look.yaw, pitch:look.pitch };
   }
   gl.addEventListener('pointerup', up); gl.addEventListener('pointercancel', up);
+  gl.addEventListener('click', function(){ if (needMotionAsk && !haveOri && !askedOri){ askedOri = true; askMotion(); } });   // 탭 = 사용자 동작이라 이때 권한 요청 가능
 
   function floorHit(x, y){
     var ndc = new THREE.Vector2((x/innerWidth)*2-1, -(y/innerHeight)*2+1);
@@ -656,7 +664,7 @@
         $('start').style.display = 'none'; tick(); loadDepth();
         setTimeout(function(){ loadMat(cur); }, 1500);   // 시작할 때 무거운 일을 한꺼번에 몰지 않게: AI 먼저, 매트는 조금 뒤에
         // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
-        if (needMotionAsk) setTimeout(function(){ if (!haveOri) $('tapori').style.display = 'flex'; }, 300);   // 움직임 권한 안내를 빨리 띄움(신호가 오면 자동으로 닫힘)
+        // 아이폰 움직임 권한: 따로 '톡 눌러주세요' 창을 띄우지 않고, 매트를 놓는 첫 탭에서 같이 요청한다
       });
   }
   $('tapori').addEventListener('click', function(){ $('tapori').style.display = 'none'; askMotion(); });
