@@ -15,7 +15,12 @@
   #home svg{flex:0 0 auto}
   #x{width:40px;height:40px;border-radius:50%;background:#fff;border:0;color:#111;font-size:26px;font-weight:400;line-height:40px;text-align:center;padding:0;box-shadow:0 2px 10px #0004}
   #prog{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#000a;color:#fff;font-size:12px;font-weight:600;z-index:6;white-space:nowrap;backdrop-filter:blur(6px)}
-  #prog i{width:10px;height:10px;border-radius:50%;border:2px solid #fff5;border-top-color:#fff;animation:spin .8s linear infinite}
+  #prog i{width:14px;height:14px;border-radius:50%;border:2px solid #fff5;border-top-color:#fff;animation:spin .8s linear infinite;flex:0 0 auto}
+  #prog{flex-wrap:wrap;justify-content:center;min-width:220px;padding:9px 16px 11px;border-radius:16px;font-size:13px}
+  #prog b{flex:0 0 100%;height:4px;border-radius:4px;background:#fff3;overflow:hidden;margin-top:7px;position:relative}
+  #prog b s{position:absolute;left:0;top:0;bottom:0;width:100%;background:#fff;border-radius:4px;transform-origin:left center;transform:scaleX(.03);transition:transform .5s ease-out}
+  #prog b:after{content:"";position:absolute;top:0;bottom:0;width:40%;background:linear-gradient(90deg,#fff0,#fff9,#fff0);animation:progShine 1.2s linear infinite}
+  @keyframes progShine{from{left:-40%}to{left:100%}}
   @keyframes spin{to{transform:rotate(360deg)}}
   #savetip{color:#fff;font-size:14px;text-align:center;padding:10px 14px 0;line-height:1.5;display:none}
   #dbg{position:fixed;left:14px;top:calc(env(safe-area-inset-top) + 50px);color:#fffb;font-size:11px;z-index:5;text-shadow:0 1px 4px #000;white-space:pre-line}
@@ -62,7 +67,7 @@
 <canvas id="gl"></canvas>
 
 <div id="top"><button id="home" aria-label="디자인짐으로 돌아가기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>디자인짐으로 돌아가기</button><button id="x" aria-label="닫기">×</button></div>
-<div id="prog"><i></i><span id="progt"></span></div>
+<div id="prog"><i></i><span id="progt"></span><b><s id="progbar"></s></b></div>
 <div id="dbg"></div>
 <div id="ring"><i></i></div>
 <div id="hint" class="blink">바닥이 보이게 폰을 살짝 내리고<br>여기를 탭하세요<small>그 자리에 매트가 놓입니다</small></div>
@@ -220,7 +225,7 @@
   var CAL_Q = +((location.search.match(/[?&]cal=([0-9.]+)/)||[])[1]) || 0, CAL = CAL_Q || 0.8;   // 모델이 높이를 크게 보는 경향 보정 (모델별 기본값, URL cal=로 덮어쓰기)
   /* ---- 다운로드 진행 표시 ---- */
   var prog = $('prog'), progT = $('progt'), progBytes = {}, progTotal = 0, PROG_MSG = '실제 크기 맞추는 중…';
-  function setProg(phase, frac){ progT.textContent = phase + (frac != null ? ' ' + Math.round(frac*100) + '%' : ''); prog.style.display = phase ? 'flex' : 'none'; }
+  function setProg(phase, frac){ progT.textContent = phase + (frac != null ? ' ' + Math.round(frac*100) + '%' : ''); prog.style.display = phase ? 'flex' : 'none'; var pb = document.getElementById('progbar'); if (pb && frac != null) pb.style.transform = 'scaleX(' + Math.max(.03, Math.min(1, frac)) + ')'; }
   function dlProgress(){ var now = Date.now(); if (now - (dlProgress.t||0) < 120) return; dlProgress.t = now; var got = 0; for (var k in progBytes) got += progBytes[k]; setProg(PROG_MSG, progTotal ? Math.min(.85, got/progTotal*.85) : 0); }
   function readAll(r, key){
     var len = +r.headers.get('content-length') || 0;
@@ -312,7 +317,7 @@
     worker.onerror = function(e){ onFail('worker: ' + String(e.message||'')); };
     worker.onmessage = function(ev){
       var m = ev.data;
-      if (m.type === 'ready'){ depthState = 'ready'; dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
+      if (m.type === 'ready'){ depthState = 'ready'; setProg(PROG_MSG, .98); dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
       else if (m.type === 'fail'){ onFail(m.msg, m.ep); }
       else if (m.type === 'err'){
         inflight = false; runErrs++;
@@ -520,7 +525,7 @@
     if (h){ h = Math.max(.3, Math.min(2.2, h * CAL)); }
     if (h){
       measured++; stalls = 0; runErrs = 0; badGpu = 0;
-      if (!firstDone){ EYE_H = h; camera.position.y = h; firstDone = true; setProg(''); }
+      if (!firstDone){ EYE_H = h; camera.position.y = h; firstDone = true; setProg(PROG_MSG, 1); setTimeout(function(){ setProg(''); }, 450); }
       targetH = h;                                                // 실제 반영은 tick()에서 부드럽게
       dbg.textContent = '폰 높이 ' + EYE_H.toFixed(2) + 'm (측정 ' + (h/CAL).toFixed(2) + '×' + CAL + ') · ' + (ms/1000).toFixed(1) + 's · #' + measured + ' · ' + ep + '/' + OPT + (HIDE.length ? '/h' : '') + ' · mv' + moves + '\n' + diag + (why ? '\n전환: ' + why : '');
     } else dbg.textContent = '바닥이 안 보여요 · 높이 ' + EYE_H.toFixed(2) + 'm · ' + ep;
