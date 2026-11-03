@@ -445,7 +445,8 @@
     depthState = 'loading'; initModel();
   }
   // 페이지가 열리자마자(카메라 켜기 전) 모델 다운로드를 시작해 둔다 — 안내 읽고 권한 허용하는 동안 받아둠
-  if (!DIAG && window.Worker){ try{ fetchModel(MODELS[ep])['catch'](function(){}); }catch(e){} }
+  if (!DIAG && window.Worker){ if (IS_AND) setTimeout(loadDepth, 0);   // 안드로이드: AI 준비(GPU 컴파일)가 오래 걸려서 카메라 켜는 동안 미리 시작
+    else { try{ fetchModel(MODELS[ep])['catch'](function(){}); }catch(e){} } }
   // 화면에 보이는 카메라 영역(object-fit:cover)을 그대로 모델 입력 크기로 그려 Worker에 보낸다
   function measureOnce(){
     if (depthState !== 'ready' || inflight) return;
