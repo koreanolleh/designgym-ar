@@ -142,6 +142,7 @@
     if (mat){ holder.position.copy(mat.position); holder.rotation.copy(mat.rotation); holder.visible = mat.visible; scene.remove(mat); }
     else holder.visible = false;
     mat = holder; scene.add(mat);
+    try{ camera.updateMatrixWorld(); renderer.compile(scene, camera); }catch(e){}   // 매트 셰이더를 미리 준비 → 처음 놓을 때 멈칫 줄임
     matSize = holder.userData.size;
     shadow.scale.set(matSize.x * 1.12, matSize.z * 1.4, 1);
     holder.add(shadow);
@@ -551,7 +552,7 @@
   function tick(){
     if (haveOri) applyOri(); else camera.quaternion.setFromEuler(new THREE.Euler(look.pitch, look.yaw, 0, 'YXZ'));
     if (firstDone && Math.abs(targetH - EYE_H) > .002){ EYE_H += (targetH - EYE_H) * .2; camera.position.y = EYE_H; }
-    if (placed || !tick.blank){ renderer.render(scene, camera); tick.blank = !placed; }   // 매트를 놓기 전엔 그릴 게 없으니 GPU를 AI에 양보
+    if (placed || !tick.blank){ renderer.render(scene, camera); tick.blank = !placed; } else camera.updateMatrixWorld();   // 안 그릴 때도 카메라 방향은 갱신(탭 위치 계산에 필요)   // 매트를 놓기 전엔 그릴 게 없으니 GPU를 AI에 양보
     requestAnimationFrame(tick);
   }
 
