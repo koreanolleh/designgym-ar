@@ -19,7 +19,7 @@
   #prog svg{width:132px;height:54px;overflow:visible}
   #prog svg path{fill:none;stroke-linecap:butt;stroke-linejoin:miter}
   #prog .bg path{stroke:#ffffff40}
-  #prog .fg path{stroke:#EF4B45;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset .5s ease-out}
+  #prog .fg path{stroke:#EF4B45;stroke-dasharray:1 1;stroke-dashoffset:1;transition:stroke-dashoffset .3s linear}
   #prog .fg{animation:logoPulse 1.4s ease-in-out infinite}
   @keyframes logoPulse{0%,100%{opacity:1}50%{opacity:.7}}
   #progt{font-size:12.5px;font-weight:600;letter-spacing:-.01em}
@@ -227,8 +227,21 @@
   var CAL_Q = +((location.search.match(/[?&]cal=([0-9.]+)/)||[])[1]) || 0, CAL = CAL_Q || 0.8;   // 모델이 높이를 크게 보는 경향 보정 (모델별 기본값, URL cal=로 덮어쓰기)
   /* ---- 다운로드 진행 표시 ---- */
   var prog = $('prog'), progT = $('progt'), progBytes = {}, progTotal = 0, PROG_MSG = '실제 크기 맞추는 중…';
-  function setProg(phase, frac){ progT.textContent = phase + (frac != null ? ' ' + Math.round(frac*100) + '%' : ''); prog.style.display = phase ? 'flex' : 'none'; if (frac != null){ var f = Math.max(0, Math.min(1, frac)), seg = [[0,.42,'lg1'],[.42,.58,'lg2'],[.58,1,'lg3']]; seg.forEach(function(g){ var el = document.getElementById(g[2]); if (el) el.style.strokeDashoffset = String(1 - Math.max(0, Math.min(1, (f - g[0]) / (g[1] - g[0])))); }); } }   // 로고 선을 따라 구매 버튼 색으로 채워짐
-  function dlProgress(){ var now = Date.now(); if (now - (dlProgress.t||0) < 120) return; dlProgress.t = now; var got = 0; for (var k in progBytes) got += progBytes[k]; setProg(PROG_MSG, progTotal ? Math.min(.85, got/progTotal*.85) : 0); }
+  function drawProg(phase, frac){ progT.textContent = phase + (frac != null ? ' ' + Math.round(frac*100) + '%' : ''); prog.style.display = phase ? 'flex' : 'none'; if (frac != null){ var f = Math.max(0, Math.min(1, frac)), seg = [[0,.42,'lg1'],[.42,.58,'lg2'],[.58,1,'lg3']]; seg.forEach(function(g){ var el = document.getElementById(g[2]); if (el) el.style.strokeDashoffset = String(1 - Math.max(0, Math.min(1, (f - g[0]) / (g[1] - g[0])))); }); } }   // 로고 선을 따라 구매 버튼 색으로 채워짐
+  // 진행률: 실제로 오래 걸리는 단계(AI 준비·첫 측정)에 게이지 대부분을 배정하고, 그 사이엔 예상 시간에 맞춰 천천히 차오르게 한다
+  var progCur = 0, progTgt = 0, progK = 0, progTimer = null, progPhase = '';
+  function setProg(phase, frac){
+    progPhase = phase;
+    if (!phase){ clearInterval(progTimer); progTimer = null; progCur = 0; progTgt = 0; drawProg('', null); return; }
+    if (frac != null && frac > progCur){ progCur = frac; if (progTgt < progCur) progTgt = progCur; }
+    drawProg(phase, progCur);
+  }
+  function progTo(target, ms){   // ms 동안 target 쪽으로 점점 느려지며 차오름(멈춰 보이지 않게)
+    if (target <= progCur) return;
+    progTgt = target; progK = 1 - Math.pow(0.04, 100 / Math.max(300, ms));
+    if (!progTimer) progTimer = setInterval(function(){ if (!progPhase) return; var d = progTgt - progCur; if (d > 0.002){ progCur += d * progK; drawProg(progPhase, progCur); } }, 100);
+  }
+  function dlProgress(){ var now = Date.now(); if (now - (dlProgress.t||0) < 120) return; dlProgress.t = now; var got = 0; for (var k in progBytes) got += progBytes[k]; setProg(PROG_MSG, progTotal ? Math.min(.3, got/progTotal*.3) : 0); }
   function readAll(r, key){
     var len = +r.headers.get('content-length') || 0;
     if (len) progTotal += len;
@@ -263,7 +276,7 @@
   function unpackInWorker(buf){
     return new Promise(function(res, rej){
       var w = new Worker(URL.createObjectURL(new Blob([UNPACK_SRC], { type:'text/javascript' })));
-      w.onmessage = function(ev){ var m = ev.data; if (m.p != null){ setProg(PROG_MSG, .85 + m.p*.1); return; } w.terminate(); if (m.err) rej(new Error('unpack: ' + m.err)); else res(new Uint8Array(m.out)); };
+      w.onmessage = function(ev){ var m = ev.data; if (m.p != null){ setProg(PROG_MSG, .3 + m.p*.15); return; } w.terminate(); if (m.err) rej(new Error('unpack: ' + m.err)); else res(new Uint8Array(m.out)); };
       w.onerror = function(e){ w.terminate(); rej(new Error('unpack worker: ' + (e.message||''))); };
       if (Array.isArray(buf)) w.postMessage({ parts: buf }, buf);   // 조각 합치기도 Worker에서(메인 스레드에서 수십 MB 복사하면 화면이 1초가량 멈춤)
       else w.postMessage({ buf: buf.buffer }, [buf.buffer]);
@@ -319,7 +332,7 @@
     worker.onerror = function(e){ onFail('worker: ' + String(e.message||'')); };
     worker.onmessage = function(ev){
       var m = ev.data;
-      if (m.type === 'ready'){ depthState = 'ready'; setProg(PROG_MSG, .98); dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
+      if (m.type === 'ready'){ depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (' + m.ep + ' · ort' + ORT_VER + ' · opt=' + OPT + ') ' + gpuInfo + '\nfeat: ' + (m.feats||''); setTimeout(measureOnce, 100); }
       else if (m.type === 'fail'){ onFail(m.msg, m.ep); }
       else if (m.type === 'err'){
         inflight = false; runErrs++;
@@ -357,13 +370,13 @@
         var to = setTimeout(function(){ back('init timeout'); }, 25000);
         w.onerror = function(e){ clearTimeout(to); back('worker ' + (e && e.message || '')); };
         w.onmessage = function(ev){ var m = ev.data;
-          if (m.type === 'ready'){ if (settled) return; settled = true; clearTimeout(to); lrtW = w; depthState = 'ready'; dbg.textContent = 'AI 준비됨 (litert · webgpu · worker) ' + gpuInfo; setTimeout(measureOnce, 100); }
+          if (m.type === 'ready'){ if (settled) return; settled = true; clearTimeout(to); lrtW = w; depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800); dbg.textContent = 'AI 준비됨 (litert · webgpu · worker) ' + gpuInfo; setTimeout(measureOnce, 100); }
           else if (m.type === 'fail'){ clearTimeout(to); back(m.msg); }
           else if (m.type === 'depth'){ onDepth(m.d, m.ms); }
           else if (m.type === 'err'){ inflight = false; runErrs++; dbg.textContent = '측정 오류(litert-w ' + runErrs + '): ' + String(m.msg).slice(0,60);
             if (runErrs >= 3){ why = 'litert-w 오류×3'; runErrs = 0; try{ w.terminate(); }catch(e){} lrtW = null; ep = 'wasm'; depthState = 'loading'; initModel(); } }
         };
-        dbg.textContent = 'AI 준비 중… (LiteRT 워커)'; setProg(PROG_MSG, .97);
+        dbg.textContent = 'AI 준비 중… (LiteRT 워커)'; setProg(PROG_MSG, .45); progTo(.85, 2500);
         w.postMessage({ type:'init', cdn:LRT_CDN, buf:buf.buffer }, [buf.buffer]);
         return Promise.resolve();
       }catch(e){ lrtWDisabled = true; }
@@ -371,11 +384,11 @@
     dbg.textContent = 'AI 준비 중… (LiteRT 런타임)';
     var imp = (lrt ? Promise.resolve(lrt) : import(LRT_CDN + '+esm').then(function(m){ return m.loadLiteRt(LRT_CDN + 'wasm/').then(function(){ lrt = m; return m; }); }));
     return imp.then(function(m){
-      dbg.textContent = 'AI 준비 중… (GPU 컴파일)'; setProg(PROG_MSG, .97);
+      dbg.textContent = 'AI 준비 중… (GPU 컴파일)'; setProg(PROG_MSG, .45); progTo(.85, 2500);
       return m.loadAndCompile(buf, { accelerator:'webgpu' });
     }).then(function(mod){
       if (mod.isFullyAccelerated === false){ try{ mod.delete(); }catch(e){} throw new Error('GPU 미지원 연산 → 메인 스레드 CPU 실행은 피함'); }   // LiteRT가 CPU로 떨어지면 화면이 멈추므로 ORT Worker(CPU)로 보낸다
-      lrtModel = mod; depthState = 'ready';
+      lrtModel = mod; depthState = 'ready'; setProg(PROG_MSG, .85); progTo(.98, 1800);
       dbg.textContent = 'AI 준비됨 (litert · webgpu) ' + gpuInfo;
       setTimeout(measureOnce, 100);
     });
@@ -402,6 +415,7 @@
       dbg.textContent = 'AI 준비 중… (모델 로드, ' + ep + ')';
       if (ep === 'litert') return initLiteRt(buf);
       startWorker();
+      setProg(PROG_MSG, .45); progTo(.85, 2500);
       worker.postMessage({ type:'init', buf:buf.buffer, w:DW, h:DH, ep:ep, opt:OPT, hide:HIDE }, [buf.buffer]);
     })['catch'](function(e){ if (model.fallback){ initModel(model.fallback); return; } onFail(String(e && e.message || e), ep); });
   }
