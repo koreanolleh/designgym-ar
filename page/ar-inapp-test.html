@@ -325,7 +325,40 @@
     if (failedEp === 'webgpu' && ep === 'webgpu'){ ep = 'wasm'; dbg.textContent = 'GPU 불가 → CPU로 전환'; initModel(); return; }
     depthState = 'failed'; dbg.textContent = 'AI 실패: ' + String(msg).slice(0, 60); setProg('');
   }
+  // 안드로이드: LiteRT(AI)를 화면 뒤 별도 작업(Worker)에서 돌린다 → AI가 도는 동안에도 화면이 안 멈춤. 실패하면 기존 방식(메인)으로 자동 복귀
+  var lrtW = null, lrtWDisabled = /[?&]lrtw=0/.test(location.search);
+  var LRTW_SRC = [
+    "var lrt=null, model=null, mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225], BASEW='';",
+    "function absU(u){ u=String(u); return /^(https?:|blob:|data:)/.test(u)?u:BASEW+u.replace(/^\\.?\\//,''); }",   // blob 워커에서는 상대 주소(wasm 파일)가 깨지므로 CDN 절대 주소로 바꿔줌
+    "var _xo=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){ arguments[1]=absU(u); return _xo.apply(this,arguments); };",
+    "var _ft=self.fetch; self.fetch=function(u,o){ if(typeof u==='string') u=absU(u); return _ft.call(self,u,o); };",
+    "self.onmessage=function(e){ var m=e.data;",
+    " if(m.type==='init'){ BASEW=m.cdn+'wasm/'; import(m.cdn+'+esm').then(function(mod){ lrt=mod; return mod.loadLiteRt(m.cdn+'wasm/'); }).then(function(){ return lrt.loadAndCompile(new Uint8Array(m.buf),{accelerator:'webgpu'}); }).then(function(md){ if(md.isFullyAccelerated===false){ try{md.delete();}catch(x){} throw new Error('not fully accelerated'); } model=md; postMessage({type:'ready'}); }).catch(function(err){ postMessage({type:'fail', msg:String(err&&err.message||err)}); }); return; }",
+    " if(m.type==='run'){ if(!model) return; var W=m.w, H=m.h, n=W*H, d=m.rgba, t=new Float32Array(3*n);",
+    "  for(var i=0,p=0,o=0;i<n;i++,p+=4,o+=3){ t[o]=(d[p]/255-mean[0])/std[0]; t[o+1]=(d[p+1]/255-mean[1])/std[1]; t[o+2]=(d[p+2]/255-mean[2])/std[2]; }",
+    "  var inT=new lrt.Tensor(t,[1,H,W,3]), t0=performance.now();",
+    "  model.run(inT).then(function(outs){ try{inT.delete();}catch(x){} var o=outs[0]; return (o.accelerator==='wasm'?Promise.resolve(o):o.moveTo('wasm')).then(function(c){ var y=Float32Array.from(c.toTypedArray()); try{c.delete();}catch(x){} try{ if(c!==o) o.delete(); }catch(x){} postMessage({type:'depth', d:y, ms:performance.now()-t0},[y.buffer]); }); }).catch(function(err){ postMessage({type:'err', msg:String(err&&err.message||err)}); }); }",
+    "};"
+  ].join("\n");
   function initLiteRt(buf){
+    if (IS_AND && !lrtWDisabled && !lrtW){
+      try{
+        var w = new Worker(URL.createObjectURL(new Blob([LRTW_SRC], { type:'text/javascript' })));   // 일반 워커(LiteRT 로더가 importScripts를 씀)
+        var settled = false, back = function(why2){ if (settled) return; settled = true; try{ w.terminate(); }catch(e){} lrtW = null; lrtWDisabled = true; why = (why ? why + ' · ' : '') + 'LiteRT 워커 불가: ' + String(why2).slice(0,40); depthState = 'loading'; initModel(); };   // 저장해 둔 모델로 기존 방식 재시작
+        var to = setTimeout(function(){ back('init timeout'); }, 25000);
+        w.onerror = function(e){ clearTimeout(to); back('worker ' + (e && e.message || '')); };
+        w.onmessage = function(ev){ var m = ev.data;
+          if (m.type === 'ready'){ if (settled) return; settled = true; clearTimeout(to); lrtW = w; depthState = 'ready'; dbg.textContent = 'AI 준비됨 (litert · webgpu · worker) ' + gpuInfo; setTimeout(measureOnce, 100); }
+          else if (m.type === 'fail'){ clearTimeout(to); back(m.msg); }
+          else if (m.type === 'depth'){ onDepth(m.d, m.ms); }
+          else if (m.type === 'err'){ inflight = false; runErrs++; dbg.textContent = '측정 오류(litert-w ' + runErrs + '): ' + String(m.msg).slice(0,60);
+            if (runErrs >= 3){ why = 'litert-w 오류×3'; runErrs = 0; try{ w.terminate(); }catch(e){} lrtW = null; ep = 'wasm'; depthState = 'loading'; initModel(); } }
+        };
+        dbg.textContent = 'AI 준비 중… (LiteRT 워커)'; setProg(PROG_MSG, .97);
+        w.postMessage({ type:'init', cdn:LRT_CDN, buf:buf.buffer }, [buf.buffer]);
+        return Promise.resolve();
+      }catch(e){ lrtWDisabled = true; }
+    }
     dbg.textContent = 'AI 준비 중… (LiteRT 런타임)';
     var imp = (lrt ? Promise.resolve(lrt) : import(LRT_CDN + '+esm').then(function(m){ return m.loadLiteRt(LRT_CDN + 'wasm/').then(function(){ lrt = m; return m; }); }));
     return imp.then(function(m){
@@ -399,6 +432,7 @@
     inStat = 'in μ' + Math.round(sm/cnt) + ' σ' + Math.round(Math.sqrt(Math.max(0, sq/cnt - (sm/cnt)*(sm/cnt))));
     snapQ = camera.quaternion.clone();           // 프레임 찍은 순간의 방향
     inflight = true; sentAt = Date.now(); if (ep === 'wasm') dbg.textContent = '측정 중… (' + ep + ')';
+    if (ep === 'litert' && lrtW){ lrtW.postMessage({ type:'run', rgba:img.data, w:DW, h:DH }, [img.data.buffer]); return; }
     if (ep === 'litert'){
       (IS_AND ? new Promise(function(r){ requestAnimationFrame(function(){ setTimeout(r, 0); }); }) : Promise.resolve()).then(function(){ return runLiteRt(img); }).then(function(r){ onDepth(r.d, r.ms); })['catch'](function(e){
         inflight = false; runErrs++; dbg.textContent = '측정 오류(litert ' + runErrs + '): ' + String(e && e.message || e).slice(0,60);
