@@ -425,7 +425,8 @@
       }
       return;
     }
-    if (measured < (ep === 'wasm' ? 1 : 3)){ measureOnce(); return; }           // 초기 안정화
+    if (measured < 1){ measureOnce(); return; }
+    if (measured < (ep === 'wasm' ? 1 : 3)){ if (!IS_AND || now - lastMeasureAt > 1200) measureOnce(); return; }   // 안드로이드: 첫 측정 뒤 보정 측정은 간격을 두고(연속으로 돌리면 화면이 뚝뚝 끊김)           // 초기 안정화
     var fast = lastMs > 0 && lastMs < 700;                                        // GPU가 빠르면(0.7초 미만) 주기적으로 재서 자세 변화에 바로 따라감
     if (fast && !IS_AND){ if (now - lastMeasureAt > 2000) measureOnce(); return; }   // 안드로이드는 주기적 재측정 안 함(측정할 때마다 화면이 툭 끊김) → 움직였다 멈춘 직후에만   // 안드로이드: 폰을 움직이는 중엔 재지 않음(버벅임 방지)
     if (moved && now - lastMoveAt > 600 && now - lastMeasureAt > 1500){ moved = false; pendingSecond = true; measureOnce(); return; }   // 움직임 멈춘 직후
@@ -548,7 +549,7 @@
   function tick(){
     if (haveOri) applyOri(); else camera.quaternion.setFromEuler(new THREE.Euler(look.pitch, look.yaw, 0, 'YXZ'));
     if (firstDone && Math.abs(targetH - EYE_H) > .002){ EYE_H += (targetH - EYE_H) * .2; camera.position.y = EYE_H; }
-    renderer.render(scene, camera);
+    if (placed || !tick.blank){ renderer.render(scene, camera); tick.blank = !placed; }   // 매트를 놓기 전엔 그릴 게 없으니 GPU를 AI에 양보
     requestAnimationFrame(tick);
   }
 
