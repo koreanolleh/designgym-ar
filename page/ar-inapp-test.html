@@ -212,8 +212,9 @@
   var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var ORT_VER = IS_IOS ? '1.20.1' : '1.31.1';   // iOS: 검증된 1.20+fp16 / Android(Adreno): 1.31+fp32 (1.20은 Adreno에서 첫 실행이 안 끝남)
   // cdn: GitHub 파일(pk_* 는 int8 팩 → 폰에서 fp16 복원) / supa: 예전 Supabase 파일(그대로). 복원 후에는 둘 다 완전히 같은 모델.
+  var LRT_BIG = { name:'depth_lrt', parts:6, ver:'1', cdn:{ name:'pk_lrt', parts:4, pack:true, ref:'m-and' }, w:378, h:518, cal:0.57 };
   var MODELS = { webgpu: IS_IOS ? { name:'depth_fp16', parts:6, ver:'1', cdn:{ name:'pk_fp16', parts:4, pack:true, ref:'m-ios' }, w:378, h:518, cal:0.8 } : { name:'depth_gl2', parts:12, ver:'1', w:378, h:518, cal:0.8 },
-                 litert:{ name:'depth_lrt', parts:6, ver:'1', cdn:{ name:'pk_lrt', parts:4, pack:true, ref:'m-and' }, w:378, h:518, cal:0.57 },
+                 litert:(/[?&]lrt=big/.test(location.search) ? LRT_BIG : { name:'depth_lrt_s', parts:4, ver:'1', cdn:{ name:'pk_lrt_s', parts:4, pack:true, ref:'m-and2' }, w:266, h:364, cal:0.50, fallback:LRT_BIG }),   // 안드로이드: 가벼운 AI(364×266, 계산량 약 절반) · 실패하면 기존 모델
                  wasm: IS_IOS ? { name:'depth_int8', parts:4, ver:'2', cdn:{ name:'depth_int8', parts:5, ref:'m-cpu' }, w:378, h:518, cal:0.8 } : { name:'depth_s_int8', parts:4, ver:'1', cdn:{ name:'depth_s_int8', parts:5, ref:'m-cpus' }, w:266, h:364, cal:0.62, fallback:{ name:'depth_int8', parts:4, ver:'2', cdn:{ name:'depth_int8', parts:5, ref:'m-cpu' }, w:378, h:518, cal:0.8 } } };
   var LRT_CDN = 'https://cdn.jsdelivr.net/npm/@litertjs/core@2.6.0/';
   var DW = 378, DH = 518;                       // 모델 입력 크기 (모델별로 initModel에서 설정)
