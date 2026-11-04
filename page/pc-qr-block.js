@@ -23,7 +23,7 @@
     var st = document.createElement('style'); st.id = 'dg-pcqr-css';
     st.textContent =
       '.dg-ar-stage{position:relative}' +
-      '.dg-pcqr{display:none;position:absolute;inset:0;z-index:5;background:rgba(246,243,238,.97);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:inherit;box-sizing:border-box}' +
+      '.dg-pcqr{display:none;position:absolute;inset:0;z-index:5;background:#F6F3EE;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:inherit;box-sizing:border-box}' +
       '.dg-pcqr.on{display:flex}' +
       '.dg-pcqr i{display:block;width:180px;height:180px;background:#fff;border-radius:14px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.08);box-sizing:border-box}' +
       '.dg-pcqr i svg{width:100%;height:100%;display:block}' +
