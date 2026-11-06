@@ -162,6 +162,23 @@
     document.addEventListener('mousemove', function (e) { if (on) move(e.clientY); });
     document.addEventListener('mouseup', end);
   }
+  /* 두 손가락으로 비틀면 매트가 그 자리에서 돈다 (확대·축소는 model-viewer 기본 두 손가락 핀치 그대로).
+     한 손가락은 기본대로 보는 방향(시점)만 바뀐다. */
+  function twist(mv) {
+    var yaw = 0, a0 = null;
+    function ang(t) { return Math.atan2(t[1].clientY - t[0].clientY, t[1].clientX - t[0].clientX); }
+    mv.addEventListener('touchstart', function (e) { a0 = e.touches.length === 2 ? ang(e.touches) : null; }, { passive: true, capture: true });
+    mv.addEventListener('touchmove', function (e) {
+      if (e.touches.length !== 2 || a0 === null) return;
+      var a = ang(e.touches), d = a - a0;
+      if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+      a0 = a;
+      yaw -= d * 180 / Math.PI;
+      mv.setAttribute('orientation', '0deg 0deg ' + yaw.toFixed(2) + 'deg');
+      mv.removeAttribute('auto-rotate');
+    }, { passive: true, capture: true });
+    mv.addEventListener('touchend', function (e) { if (e.touches.length < 2) a0 = null; }, { passive: true, capture: true });
+  }
   function ensureViewer() {
     var e = build();
     if (e.mv) return;
@@ -178,8 +195,10 @@
     Object.keys(attrs).forEach(function (k) { mv.setAttribute(k, attrs[k]); });
     mv.setAttribute('src', CDN + 'models/mat_' + cur + '.glb');
     mv.addEventListener('load', function () { var l = e.stage.querySelector('.dg3-load'); if (l) l.style.display = 'none'; });
+    mv.setAttribute('disable-pan', '');
     e.stage.insertBefore(mv, e.stage.firstChild);
     e.mv = mv;
+    twist(mv);
     mvLoading['catch'](function () { var l = e.stage.querySelector('.dg3-load'); if (l) l.textContent = '3D 미리보기를 불러오지 못했어요.'; });
   }
   function setColor(k) {
