@@ -91,6 +91,7 @@
     alignPill(b, host);
     window.addEventListener('resize', function () { alignPill(b, host); });
     window.addEventListener('load', function () { alignPill(b, host); });
+    setTimeout(function () { alignPill(b, host); }, 1500);   // 사진 등장 애니메이션이 끝난 뒤 한 번 더
     return true;
   }
   /* 2026-11-06: PC는 사진 영역(830px)이 실제 사진(750px)보다 넓어서 버튼이 사진 밖으로 삐져나왔다 →
