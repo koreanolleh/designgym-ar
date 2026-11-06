@@ -88,7 +88,20 @@
     b.innerHTML = ICON + '<span>우리 집에 펼쳐보기</span>';
     b.addEventListener('click', function (e) { e.preventDefault(); openSheet(); });
     host.appendChild(b);
+    alignPill(b, host);
+    window.addEventListener('resize', function () { alignPill(b, host); });
+    window.addEventListener('load', function () { alignPill(b, host); });
     return true;
+  }
+  /* 2026-11-06: PC는 사진 영역(830px)이 실제 사진(750px)보다 넓어서 버튼이 사진 밖으로 삐져나왔다 →
+     가장 큰 상품 사진의 오른쪽 위 모서리에 맞춘다 (모바일은 사진이 영역과 같아 그대로 12px) */
+  function alignPill(b, host) {
+    var big = null, bw = 0;
+    [].forEach.call(host.querySelectorAll('img'), function (im) { var w = im.getBoundingClientRect().width; if (w > bw) { bw = w; big = im; } });
+    if (!big || bw < 200) return;
+    var h = host.getBoundingClientRect(), r = big.getBoundingClientRect(), gap = PC ? 16 : 12;
+    b.style.right = Math.max(gap, Math.round(h.right - r.right + gap)) + 'px';
+    b.style.top = Math.max(gap, Math.round(r.top - h.top + gap)) + 'px';
   }
 
   /* ---------- 360° 미리보기 창 ---------- */
