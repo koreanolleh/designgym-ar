@@ -35,8 +35,9 @@
     if (document.getElementById('dg3-css')) return;
     var s = document.createElement('style'); s.id = 'dg3-css';
     s.textContent =
-      '.dg-ar-pill{position:absolute;top:14px;right:14px;z-index:5;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit;line-height:1;-webkit-tap-highlight-color:transparent}' +
-      '.dg-ar-pill svg{flex:none}' +
+      '.dg-ar-pill{position:absolute;top:12px;right:12px;z-index:6;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit;line-height:1;-webkit-tap-highlight-color:transparent}' +
+      '.dg-ar-pill svg{display:block;flex:none}' +
+      '@media (min-width:768px){.dg-ar-pill{right:16px;top:16px}}' +
       '.dg3-scrim{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s}' +
       '.dg3-scrim.on{opacity:1;pointer-events:auto}' +
       '.dg3-sheet{position:fixed;left:0;right:0;bottom:0;z-index:2147483001;background:#fff;border-radius:22px 22px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);max-height:92vh;overflow:auto;font-family:inherit;color:#1a1a1a}' +
@@ -72,7 +73,8 @@
     document.head.appendChild(s);
   }
 
-  var ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>';
+  /* 예전 버튼과 같은 360° 회전 아이콘 (타원 + 화살표) */
+  var ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#333" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="4.4"/><path d="M6.6 15.2A9 9 0 0 0 12 21a9 9 0 0 0 5.4-5.8"/><path d="M9.2 4.2 12 3l1.1 2.8"/></svg>';
 
   /* ---------- 사진 위 버튼 ---------- */
   function placePill() {
