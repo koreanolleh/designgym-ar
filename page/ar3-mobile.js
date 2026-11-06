@@ -49,7 +49,7 @@
       '.dg3-head small{display:block;margin-top:4px;font-size:12.5px;color:#888;letter-spacing:-.01em}' +
       '.dg3-x{position:absolute;top:-2px;right:0;width:36px;height:36px;border:0;background:none;font-size:24px;line-height:36px;color:#999;cursor:pointer;padding:0}' +
       '.dg3-stage{position:relative;height:min(52vh,380px);border-radius:16px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#3a3632,#1f1d1b 75%)}' +
-      '.dg3-stage model-viewer{width:100%;height:100%;--poster-color:transparent;background:transparent}' +
+      '.dg3-stage model-viewer{width:100%;height:100%;touch-action:none;--poster-color:transparent;background:transparent}' +
       '.dg3-size{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;pointer-events:none}' +
       '.dg3-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);font-size:13px;pointer-events:none}' +
       '.dg3-chips{display:flex;gap:8px;margin-top:12px}' +
@@ -168,7 +168,8 @@
     if (!mvLoading) mvLoading = loadScript(MV_SRC, true);
     var mv = document.createElement('model-viewer');
     var attrs = {
-      alt: '디자인짐 루틴 매트 3D 모델', 'camera-controls': '', 'touch-action': 'pan-y', 'interaction-prompt': 'none',
+      alt: '디자인짐 루틴 매트 3D 모델', 'camera-controls': '', 'touch-action': 'none',   /* 창이 떠 있는 동안엔 한 손가락으로 위아래·좌우 모두 돌리기, 두 손가락은 확대 */
+      'interaction-prompt': 'none',
       'auto-rotate': '', 'auto-rotate-delay': '2500', 'rotation-per-second': '6deg', 'interpolation-decay': '160',
       'camera-orbit': '35deg 62deg 108%', 'camera-target': '0m -0.07m 0m',
       'min-camera-orbit': 'auto 0deg 70%', 'max-camera-orbit': 'auto 88deg 180%',
