@@ -713,7 +713,10 @@
         if (started) return; started = true;
         $('start').style.display = 'none'; tick(); loadDepth();
         // 진행 표시가 98%에서 멈춰 보이지 않게: 카메라를 켠 뒤 8초 안에 첫 측정이 안 끝나면 표시를 걷고 바로 놓을 수 있게 한다(측정은 뒤에서 계속)
-        setTimeout(function(){ if (!firstDone && progPhase && depthState === 'ready'){ setProg(''); hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; } }, 8000);
+        var hiAt = 0, pw = setInterval(function(){
+          if (firstDone || !progPhase){ if (firstDone) clearInterval(pw); hiAt = 0; return; }
+          if (depthState === 'ready' && progCur >= .9){ hiAt = hiAt || Date.now(); if (Date.now() - hiAt > 6000){ setProg(''); hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; clearInterval(pw); } }
+        }, 500);
         setTimeout(function(){ loadMat(cur); }, 1500);   // 시작할 때 무거운 일을 한꺼번에 몰지 않게: AI 먼저, 매트는 조금 뒤에
         // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
         // 아이폰 움직임 권한: 따로 '톡 눌러주세요' 창을 띄우지 않고, 매트를 놓는 첫 탭에서 같이 요청한다
