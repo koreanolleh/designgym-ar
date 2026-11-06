@@ -84,7 +84,7 @@
 <div id="bottom">
   <div id="chips"></div>
   <div id="acts">
-    <button id="rot" class="ghost sq" aria-label="90도 회전">↻</button>
+    <button id="toprod" class="ghost">← 상품 보기</button>
     <button id="reset" class="ghost">다시 놓기</button>
     <button id="snap">사진 저장</button>
   </div>
@@ -664,12 +664,13 @@
     b.addEventListener('click', function(){ cur = c.key; [].forEach.call(chips.children, function(x){ x.className='chip'; }); b.className='chip on'; loadMat(cur); });
     chips.appendChild(b);
   });
-  $('rot').addEventListener('click', function(){ if (mat && placed) mat.rotation.y += Math.PI/2; });
+  /* 2026-11-06: 90° 회전 버튼 대신 '상품 보기' (상단 '디자인짐으로 돌아가기'가 네이버 앱 주소창에 가려질 때를 대비) — 두 손가락 비틀기로 회전 가능 */
   $('reset').addEventListener('click', function(){ if (mat) mat.visible=false; placed=false; hint.innerHTML = HINT_DEFAULT; hint.style.opacity=1; ring.style.opacity=1; });
   var PNO = { active_steps:29, before_sunrise:33, warm_sunlight:34 };
   /* 2026-11-03: 색상과 상관없이 항상 리뷰가 있는 대표 상품(29)으로 돌아간다 (33·34 개별 상품은 리뷰 없음) */
   function goHome(){ location.href = 'https://m.designgym.co.kr/product/detail.html?product_no=29'; }
   $('home').addEventListener('click', goHome);
+  $('toprod').addEventListener('click', goHome);
   $('x').addEventListener('click', function(){ if (history.length > 1 && document.referrer && /designgym/.test(document.referrer)) history.back(); else goHome(); });
 
   $('snap').addEventListener('click', function(){
