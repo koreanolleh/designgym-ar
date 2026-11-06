@@ -722,10 +722,13 @@
     var t0 = Date.now();
     startCam()['catch'](function(e){
       camFails++;
-      btn.disabled = false; btn.textContent = '카메라 켜기';
+      btn.disabled = false; btn.textContent = '다시 시도';
       var name = e && e.name || '';
       var quick = Date.now() - t0 < 600;   // 묻지도 않고 바로 거절 = 브라우저가 막아둔 상태
-      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') showDenied(quick || camFails >= 2);
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        if (camFails >= 3) showDenied(quick);   // 3번째 거절부터 허용 방법 안내
+        else err('카메라를 허용해야 매트를 놓아볼 수 있어요. 다시 시도를 눌러주세요.');
+      }
       else err('카메라를 열 수 없어요. 다른 앱이 카메라를 쓰고 있는지 확인해 주세요.');
     });
   });
