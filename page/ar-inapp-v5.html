@@ -201,7 +201,7 @@
 
   /* ---------- 자이로 → 카메라 회전 ---------- */
   var zee = new THREE.Vector3(0,0,1), euler = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5));
-  var ori = null, haveOri = false, askedOri = false, motionP = null;
+  var ori = null, haveOri = false, askedOri = false, motionP = null, loadDone = false;
   function screenAngle(){ var a = (screen.orientation && screen.orientation.angle) || window.orientation || 0; return a * Math.PI/180; }
   function applyOri(){
     if (!ori) return;
@@ -603,7 +603,7 @@
     var p = ptArr();
     if (gest && gest.kind === 'one' && p.length === 0){
       var tap = !gest.moved && Date.now()-gest.t < 400; gest = null;
-      if (tap && !placed){
+      if (tap && !placed && loadDone){
         if (needMotionAsk && !haveOri){
           /* 2026-11-06: 아이폰 첫 탭 = 움직임 권한 요청. 탭하자마자 안내를 띄우고(무반응처럼 보이지 않게),
              허용되면 방향 신호가 오는 대로, 거절·무응답이면 바로 놓는다(화면 고정 모드). */
@@ -624,7 +624,7 @@
     else if (p.length === 1) gest = { kind:'one', x:p[0].x, y:p[0].y, moved:true, t:0, yaw:look.yaw, pitch:look.pitch };
   }
   gl.addEventListener('pointerup', up); gl.addEventListener('pointercancel', up);
-  function askOnGesture(){ if (needMotionAsk && !haveOri && !askedOri && !placed){ askedOri = true; motionP = askMotion(); } }   // 탭 = 사용자 동작이라 이때 권한 요청 가능
+  function askOnGesture(){ if (loadDone && needMotionAsk && !haveOri && !askedOri && !placed){ askedOri = true; motionP = askMotion(); } }   // 탭 = 사용자 동작이라 이때 권한 요청 가능
   gl.addEventListener('touchend', askOnGesture); gl.addEventListener('click', askOnGesture);
 
   function floorHit(x, y){
@@ -713,10 +713,17 @@
         if (started) return; started = true;
         $('start').style.display = 'none'; tick(); loadDepth();
         // 진행 표시가 98%에서 멈춰 보이지 않게: 카메라를 켠 뒤 8초 안에 첫 측정이 안 끝나면 표시를 걷고 바로 놓을 수 있게 한다(측정은 뒤에서 계속)
-        var pw = setInterval(function(){
-          if (firstDone){ clearInterval(pw); return; }
-          if (depthState === 'ready'){ setProg(''); hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; clearInterval(pw); }   // AI 준비되면 바로 '탭하세요' (첫 높이 측정은 뒤에서)
-        }, 500);
+        /* 2026-11-06: 로딩(AI 준비 + 매트 파일)이 끝나기 전에는 탭해도 매트를 놓지 않는다.
+           로딩 중엔 '탭하세요' 안내·링을 숨기고, 끝나면 진행 표시를 걷고 안내를 보여준다. (첫 높이 측정은 뒤에서 계속) */
+        hint.style.opacity = 0; ring.style.opacity = 0;
+        var camAt = Date.now(), pw = setInterval(function(){
+          var aiOk = depthState === 'ready' || depthState === 'failed';
+          var matOk = !!mat || Date.now() - camAt > 15000;
+          if (!aiOk || !matOk) return;
+          clearInterval(pw); loadDone = true;
+          setProg('');
+          if (!placed){ hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; ring.style.opacity = 1; }
+        }, 300);
         setTimeout(function(){ loadMat(cur); }, 1500);   // 시작할 때 무거운 일을 한꺼번에 몰지 않게: AI 먼저, 매트는 조금 뒤에
         // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
         // 아이폰 움직임 권한: 따로 '톡 눌러주세요' 창을 띄우지 않고, 매트를 놓는 첫 탭에서 같이 요청한다
