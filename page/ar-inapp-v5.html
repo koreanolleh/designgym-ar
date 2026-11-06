@@ -565,9 +565,9 @@
   function measureThenPlace(x, y){
     if (depthState !== 'ready' || firstDone){ place(x, y); return; }
     ring.style.opacity = 0; hint.innerHTML = '바닥까지 거리를 재는 중…<small>잠시만요</small>'; hint.style.opacity = 1;
-    /* 2026-11-06: 첫 측정이 늦거나 바닥을 못 찾으면 무한 대기하던 문제 → 최대 2.5초만 기다리고 기본 높이로 놓는다(측정되면 자연스럽게 보정) */
+    /* 2026-11-06: 첫 측정이 늦거나 바닥을 못 찾으면 무한 대기하던 문제 → 최대 1.5초만 기다리고 기본 높이로 놓는다(측정되면 자연스럽게 보정) */
     var t0 = Date.now();
-    var wait = function(){ if (firstDone || depthState !== 'ready' || Date.now() - t0 > 2500) place(x, y); else setTimeout(wait, 150); };
+    var wait = function(){ if (firstDone || depthState !== 'ready' || Date.now() - t0 > 1500) place(x, y); else setTimeout(wait, 150); };
     wait();
   }
 
@@ -713,9 +713,9 @@
         if (started) return; started = true;
         $('start').style.display = 'none'; tick(); loadDepth();
         // 진행 표시가 98%에서 멈춰 보이지 않게: 카메라를 켠 뒤 8초 안에 첫 측정이 안 끝나면 표시를 걷고 바로 놓을 수 있게 한다(측정은 뒤에서 계속)
-        var hiAt = 0, pw = setInterval(function(){
-          if (firstDone || !progPhase){ if (firstDone) clearInterval(pw); hiAt = 0; return; }
-          if (depthState === 'ready' && progCur >= .9){ hiAt = hiAt || Date.now(); if (Date.now() - hiAt > 6000){ setProg(''); hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; clearInterval(pw); } }
+        var pw = setInterval(function(){
+          if (firstDone){ clearInterval(pw); return; }
+          if (depthState === 'ready'){ setProg(''); hint.innerHTML = HINT_DEFAULT; hint.style.opacity = 1; clearInterval(pw); }   // AI 준비되면 바로 '탭하세요' (첫 높이 측정은 뒤에서)
         }, 500);
         setTimeout(function(){ loadMat(cur); }, 1500);   // 시작할 때 무거운 일을 한꺼번에 몰지 않게: AI 먼저, 매트는 조금 뒤에
         // 아이폰에서 움직임 권한이 아직 없으면(자이로 신호가 안 오면) 한 번 탭해서 받는다
