@@ -54,6 +54,10 @@
   #start h1{font-size:20px;margin:0 0 10px}
   #start p{font-size:14px;color:#bbb;line-height:1.6;margin:0 0 26px}
   #start button{width:100%;max-width:320px;height:54px;border:0;border-radius:14px;background:#fff;color:#111;font-size:17px;font-weight:700}
+  #denied{display:none;width:100%;max-width:340px}
+  #denied ol{text-align:left;margin:0 0 22px;padding:16px 16px 16px 34px;background:#ffffff14;border-radius:12px;font-size:13.5px;line-height:1.7;color:#ddd}
+  #denied li+li{margin-top:6px}
+  #denied .ghost2{margin-top:10px;background:transparent;color:#fff;border:1.5px solid #fff6}
   #err{position:fixed;left:14px;right:14px;bottom:120px;background:#c33;color:#fff;padding:10px 12px;border-radius:10px;font-size:13px;z-index:6;display:none}
   #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9;transition:opacity .25s}
   #shot{position:fixed;inset:0;z-index:13;background:#000;display:none;flex-direction:column}
@@ -91,8 +95,18 @@
 <div id="tapori"><div><b>화면을 한 번 톡 눌러주세요</b><small>폰 움직임을 따라 매트가 제자리에 고정돼요</small></div></div>
 <div id="start">
   <h1>내 방에 매트를 놓아볼게요</h1>
-  <p>카메라와 움직임 센서 권한을 허용해 주세요.<br>앱을 나가지 않고 바로 볼 수 있습니다.</p>
+  <p id="startmsg">카메라 권한을 허용해 주세요.<br>앱을 나가지 않고 바로 볼 수 있습니다.</p>
   <button id="go">카메라 켜기</button>
+  <div id="denied">
+    <p id="denhint"></p>
+    <ol>
+      <li><b>사파리</b>: 주소창 왼쪽 <b>가가</b>(aA) → 웹사이트 설정 → 카메라 <b>허용</b></li>
+      <li><b>카카오톡·네이버·인스타 앱</b>: 아이폰 <b>설정</b> → 해당 앱 → 카메라 <b>켜기</b></li>
+      <li><b>안드로이드</b>: 주소창 왼쪽 자물쇠 → 권한 → 카메라 <b>허용</b></li>
+    </ol>
+    <button id="retry">다시 시도</button>
+    <button id="reload" class="ghost2">새로고침</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -690,13 +704,36 @@
       });
   }
   $('tapori').addEventListener('click', function(){ $('tapori').style.display = 'none'; askMotion(); });
+  /* 2026-11-06: '카메라 켜기'는 카메라 권한만 묻는다 (움직임 권한은 매트를 놓는 첫 탭에서 따로).
+     거절하면 네이티브 알림 대신 화면 안에 허용 방법을 보여준다. 아이폰은 여러 번 거절하면 더 이상 묻지 않고
+     바로 거절되므로(아무 반응 없어 보임), 그때는 설정에서 허용하거나 새로고침하는 방법을 안내한다. */
+  var camFails = 0;
+  function showDenied(blocked){
+    var box = $('denied');
+    $('go').style.display = 'none';
+    $('startmsg').style.display = 'none';
+    $('denhint').innerHTML = blocked
+      ? '이 화면에서 카메라가 막혀 있어요.<br>아래 방법으로 허용한 뒤 <b>새로고침</b>을 눌러주세요.'
+      : '카메라를 허용해야 매트를 놓아볼 수 있어요.';
+    box.style.display = 'block';
+  }
   $('go').addEventListener('click', function(){
     var btn = this; btn.disabled = true; btn.textContent = '권한 확인 중…';
-    askMotion().then(startCam)['catch'](function(e){
-      btn.disabled = false; btn.textContent = '다시 시도';
-      err('카메라를 열 수 없어요. 권한을 허용해 주세요. (' + (e && e.name || e) + ')');
+    var t0 = Date.now();
+    startCam()['catch'](function(e){
+      camFails++;
+      btn.disabled = false; btn.textContent = '카메라 켜기';
+      var name = e && e.name || '';
+      var quick = Date.now() - t0 < 600;   // 묻지도 않고 바로 거절 = 브라우저가 막아둔 상태
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') showDenied(quick || camFails >= 2);
+      else err('카메라를 열 수 없어요. 다른 앱이 카메라를 쓰고 있는지 확인해 주세요.');
     });
   });
+  $('retry').addEventListener('click', function(){
+    $('denied').style.display = 'none'; $('go').style.display = ''; $('startmsg').style.display = '';
+    $('go').click();
+  });
+  $('reload').addEventListener('click', function(){ location.reload(); });   // 사용자가 직접 누를 때만
   if (DIAG){ $('start').style.display = 'none'; runDiag(); }
   else {
     $('start').style.visibility = 'visible';   // 카메라 권한은 '카메라 켜기'를 누른 뒤에만 요청한다

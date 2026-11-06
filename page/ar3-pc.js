@@ -41,8 +41,9 @@
       '.dg3-scrim.on{opacity:1;pointer-events:auto}' +
       '.dg3-sheet{position:fixed;left:0;right:0;bottom:0;z-index:2147483001;background:#fff;border-radius:22px 22px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));box-sizing:border-box;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);max-height:92vh;overflow:auto;font-family:inherit;color:#1a1a1a}' +
       '.dg3-sheet.on{transform:none}' +
-      '.dg3-grip{display:block;width:44px;height:5px;border-radius:3px;background:#ddd;margin:0 auto 10px}' +
-      '@media (min-width:768px){.dg3-sheet{left:50%;right:auto;bottom:auto;top:50%;width:460px;border-radius:20px;padding:16px 16px 18px;transform:translate(-50%,-46%);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s}.dg3-sheet.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}.dg3-grip{display:none}}' +
+      '.dg3-drag{margin:-10px -16px 0;padding:10px 0 12px;touch-action:none;cursor:grab}' +
+      '.dg3-grip{display:block;width:44px;height:5px;border-radius:3px;background:#ccc;margin:0 auto}' +
+      '@media (min-width:768px){.dg3-sheet{left:50%;right:auto;bottom:auto;top:50%;width:460px;border-radius:20px;padding:16px 16px 18px;transform:translate(-50%,-46%);opacity:0;pointer-events:none;transition:transform .25s,opacity .25s}.dg3-sheet.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}.dg3-drag{display:none}}' +
       '.dg3-head{position:relative;text-align:center;padding:2px 36px 12px}' +
       '.dg3-head b{display:block;font-size:17px;font-weight:700;letter-spacing:-.02em}' +
       '.dg3-head small{display:block;margin-top:4px;font-size:12.5px;color:#888;letter-spacing:-.01em}' +
@@ -89,7 +90,7 @@
   }
 
   /* ---------- 360° 미리보기 창 ---------- */
-  var el = null, mvLoading = null;
+  var el = null, mvLoading = null, openedAt = 0;
   function loadScript(src, module) {
     return new Promise(function (res, rej) {
       var s = document.createElement('script');
@@ -107,7 +108,7 @@
       return '<button type="button" class="dg3-chip" data-k="' + c.k + '"><img src="' + CDN + 'thumbs/' + c.k + '.jpg" alt=""><span>' + c.n + '</span></button>';
     }).join('');
     sheet.innerHTML =
-      '<span class="dg3-grip"></span>' +
+      '<div class="dg3-drag"><span class="dg3-grip"></span></div>' +
       '<div class="dg3-head"><b>360° 제품보기</b><small>183 × 61cm · 두께 8mm · 손가락으로 돌려보세요</small><button type="button" class="dg3-x" aria-label="닫기">×</button></div>' +
       '<div class="dg3-stage"><div class="dg3-load">불러오는 중…</div><span class="dg3-size">183 × 61 cm</span>' +
         (PC ? '<div class="dg3-qr"><i></i><b>폰 카메라로 찍어주세요</b><p>바닥을 비추면 이 매트가<br>우리 집에 실제 크기로 펼쳐져요.</p><button type="button" class="dg3-back">360° 보기로 돌아가기</button></div>' : '') +
@@ -120,7 +121,7 @@
       (PC ? '<button type="button" class="dg3-go">내 방에 놓아보기</button>'
           : '<a class="dg3-go" href="' + arPage(cur) + '">내 방에 놓아보기</a>');
     document.body.appendChild(scrim); document.body.appendChild(sheet);
-    scrim.addEventListener('click', close);
+    scrim.addEventListener('click', function () { if (Date.now() - openedAt > 400) close(); });   /* 여는 탭이 바깥 터치로 잡히지 않게 */
     sheet.querySelector('.dg3-x').addEventListener('click', close);
     [].forEach.call(sheet.querySelectorAll('.dg3-chip'), function (b) {
       b.addEventListener('click', function () { setColor(b.getAttribute('data-k')); });
@@ -129,8 +130,37 @@
       sheet.querySelector('.dg3-go').addEventListener('click', showQr);
       sheet.querySelector('.dg3-back').addEventListener('click', function () { sheet.querySelector('.dg3-qr').classList.remove('on'); });
     }
+    dragToClose(sheet.querySelector('.dg3-drag'), sheet.querySelector('.dg3-head'), sheet, scrim);
     el = { scrim: scrim, sheet: sheet, stage: sheet.querySelector('.dg3-stage'), mv: null };
     return el;
+  }
+  /* 위쪽 손잡이(—)나 제목 줄을 잡고 아래로 끌면 따라 내려가다 닫힌다. 조금만 끌면 제자리로 */
+  function dragToClose(handle, head, sheet, scrim) {
+    var y0 = 0, t0 = 0, dy = 0, on = false;
+    function start(y) { on = true; y0 = y; t0 = Date.now(); dy = 0; sheet.style.transition = 'none'; }
+    function move(y) {
+      if (!on) return;
+      dy = Math.max(0, y - y0);
+      sheet.style.transform = 'translateY(' + dy + 'px)';
+      scrim.style.opacity = String(Math.max(0, 1 - dy / (sheet.offsetHeight || 600)));
+    }
+    function end() {
+      if (!on) return; on = false;
+      var v = dy / Math.max(1, Date.now() - t0);   // px/ms
+      sheet.style.transition = '';
+      if (dy > 110 || (dy > 30 && v > 0.6)) close();
+      else { sheet.style.transform = ''; scrim.style.opacity = ''; }
+    }
+    [handle, head].forEach(function (z) {
+      if (!z) return;
+      z.addEventListener('touchstart', function (e) { if (e.target.closest('.dg3-x')) return; start(e.touches[0].clientY); }, { passive: true });
+      z.addEventListener('touchmove', function (e) { if (!on) return; e.preventDefault(); move(e.touches[0].clientY); }, { passive: false });
+      z.addEventListener('touchend', end);
+      z.addEventListener('touchcancel', end);
+    });
+    handle.addEventListener('mousedown', function (e) { start(e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', function (e) { if (on) move(e.clientY); });
+    document.addEventListener('mouseup', end);
   }
   function ensureViewer() {
     var e = build();
@@ -176,16 +206,21 @@
     ensureViewer();
     setColor(cur);
     var q = e.sheet.querySelector('.dg3-qr'); if (q) q.classList.remove('on');
+    openedAt = Date.now();
+    e.sheet.style.transform = ''; e.sheet.style.transition = ''; e.scrim.style.opacity = '';
     document.documentElement.classList.add('dg3-lock');
     e.scrim.classList.add('on'); e.sheet.classList.add('on');
   }
   function close() {
     if (!el) return;
+    el.sheet.style.transition = ''; el.sheet.style.transform = ''; el.scrim.style.opacity = '';
     el.scrim.classList.remove('on'); el.sheet.classList.remove('on');
     document.documentElement.classList.remove('dg3-lock');
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-  window.addEventListener('pageshow', function () { close(); });   /* 카메라 페이지에서 뒤로 왔을 때 창이 열린 채로 남지 않게 */
+  /* 카메라 페이지에서 '뒤로'로 돌아왔을 때(페이지 캐시 복원)만 닫는다.
+     처음 로딩 중에 오는 pageshow 로 닫히던 문제(첫 1회 꺼짐) 수정 — 2026-11-06 */
+  window.addEventListener('pageshow', function (ev) { if (ev.persisted) close(); });
 
   /* ---------- 시작: 사진 영역이 그려질 때까지 잠깐 기다렸다가 버튼을 붙인다 ---------- */
   css();
