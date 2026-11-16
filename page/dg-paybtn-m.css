@@ -2,8 +2,8 @@
 .buy-popup.dg-mode-buy #fixedActionButton::before,.buy-popup.dg-mode-buy #fixedActionButton::after{display:none!important;content:none!important}
 .buy-popup.dg-mode-buy #fixedActionButton>.inline:not(.soldout){display:contents!important}
 .buy-popup.dg-mode-buy #fixedActionButton .detail-btn--buy{order:1;flex:0 0 100%;width:100%!important;height:52px!important;margin:0!important;border-radius:10px!important}
-.buy-popup.dg-mode-buy #fixedActionButton #actionCart{order:2;flex:1 1 0;min-width:0;width:auto!important;height:50px!important;margin:0!important;border-radius:10px!important;border-color:#D9D6D0!important;display:flex!important;align-items:center;justify-content:center;gap:4px;padding-left:24px!important;background-position:left 14px center!important}
-.buy-popup.dg-mode-buy #fixedActionButton #actionCart::after{content:"장바구니";font-size:14px;font-weight:600;color:#222;letter-spacing:-.3px}
+.buy-popup.dg-mode-buy #fixedActionButton #actionCart{order:2;flex:1 1 0;min-width:0;width:auto!important;height:50px!important;margin:0!important;border-radius:10px!important;border-color:#D9D6D0!important;display:flex!important;align-items:center;justify-content:center;padding:0!important;background-position:calc(50% - 31px) center!important}
+.buy-popup.dg-mode-buy #fixedActionButton #actionCart::after{content:"장바구니";margin-left:26px;font-size:14px;font-weight:600;color:#222;letter-spacing:-.3px}
 .buy-popup.dg-mode-buy #fixedActionButton #NaverChk_Button{order:3;flex:1 1 0;min-width:0;margin:0!important;overflow:hidden;border-radius:10px}
 .buy-popup.dg-mode-buy #fixedActionButton #appPaymentButtonBox{order:4;flex:1 1 0;min-width:0;margin:0!important;overflow:hidden;border-radius:10px;display:block!important}
 .buy-popup.dg-mode-buy #NaverChk_Button .npay_storebtn_bx,.buy-popup.dg-mode-buy #NaverChk_Button .npay_button_box,.buy-popup.dg-mode-buy #NaverChk_Button .npay_button{width:100%!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;height:50px!important;max-height:none!important;overflow:visible!important;float:none!important;background:transparent!important}
