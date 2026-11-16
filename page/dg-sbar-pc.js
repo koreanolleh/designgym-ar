@@ -32,8 +32,8 @@ var css=document.createElement('style');css.id='dgsb-css';css.textContent=
 '#dgsb-dr .dgsb-L table.xans-product-option{width:100%;border-top:0!important}'+
 '#dgsb-dr.m-buy .dg-gift-btn,#dgsb-dr.m-buy .btn-action--wish{display:none!important}'+
 '#dgsb-dr.m-buy .xans-product-action .btn-action.buy{order:1!important}'+
-'#dgsb-dr.m-buy .xans-product-action .btn-action--cart{order:2!important;flex:1 1 0!important;display:flex!important;align-items:center;justify-content:center;width:auto!important}'+
-'#dgsb-dr.m-buy .xans-product-action .btn-action--cart::after{content:"장바구니";font-size:15px;font-weight:600;color:#222;margin-left:6px}'+
+'#dgsb-dr.m-buy .xans-product-action .btn-action--cart{order:2!important;flex:1 1 0!important;display:flex!important;align-items:center;justify-content:center;width:auto!important;background-position:calc(50% - 34px) center!important}'+
+'#dgsb-dr.m-buy .xans-product-action .btn-action--cart::after{content:"장바구니";font-size:15px;font-weight:600;color:#222;margin-left:30px}'+
 '#dgsb-dr.m-buy #NaverChk_Button{order:3!important}#dgsb-dr.m-buy #appPaymentButtonBox{order:4!important}'+
 '#dgsb-dr.m-gift .btn-action.buy,#dgsb-dr.m-gift .btn-action--wish,#dgsb-dr.m-gift #NaverChk_Button,#dgsb-dr.m-gift #appPaymentButtonBox{display:none!important}'+
 '#dgsb-dr.m-gift .xans-product-action .btn-action--cart{order:1!important}#dgsb-dr.m-gift .dg-gift-btn{order:2!important;border-color:#EF4B45!important;color:#EF4B45!important}';
@@ -56,9 +56,10 @@ function close(){if(!isOpen)return;nodes.forEach(function(n,i){phs[i].parentNode
 bar.addEventListener('click',function(e){var b=e.target.closest('[data-m]');if(b)open(b.getAttribute('data-m'));});
 dr.querySelector('.dgsb-hdl').addEventListener('click',close);
 document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+function lift(on){ia.style.zIndex=on?'50':'';}
 var raf=0;function tick(){raf=0;var past=isOpen?anchorTop().top<80:act.getBoundingClientRect().bottom<80;
- if(isOpen){if(!past)close();return;}
- bar.classList.toggle('show',past);}
+ if(isOpen){lift(1);if(!past)close();return;}
+ bar.classList.toggle('show',past);lift(past);}
 window.addEventListener('scroll',function(){if(!raf)raf=requestAnimationFrame(tick);},{passive:true});
 window.addEventListener('resize',function(){if(!raf)raf=requestAnimationFrame(tick);});
 tick();
