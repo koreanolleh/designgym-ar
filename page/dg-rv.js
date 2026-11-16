@@ -1,20 +1,16 @@
-/* dg-rv 2026-11-16 v4 mobile: hide culture box, collapse Q&A, best reviews first (no flicker) */
+/* dg-rv 2026-11-16 v5 mobile: hide culture box, collapse Q&A, add best reviews from next pages, show 5 until expand */
 try{(function(){
-var ul0=null;
-if(!document.getElementById('dg-rv-css')){var s=document.createElement('style');s.id='dg-rv-css';s.textContent='#dgpa{display:none!important}#prdQnA .xans-product-qna,#prdQnA .ec-base-paginate{display:none!important}#prdQnA .board__btn-wrap{padding-top:4px!important}#prdReview ul.board-list{transition:opacity .25s}#prdReview ul.board-list:not([data-rv-done]){opacity:0}';(document.head||document.documentElement).appendChild(s);}
+if(!document.getElementById('dg-rv-css')){var s=document.createElement('style');s.id='dg-rv-css';s.textContent='#dgpa{display:none!important}#prdQnA .xans-product-qna,#prdQnA .ec-base-paginate{display:none!important}#prdQnA .board__btn-wrap{padding-top:4px!important}#prdReview ul.board-list{transition:opacity .25s}#prdReview ul.board-list:not([data-rv-done]){opacity:0}#prdReview ul.board-list:not(.rv-all)>li:nth-child(n+6){display:none!important}';(document.head||document.documentElement).appendChild(s);}
 function reveal(){var u=document.querySelector('#prdReview ul.board-list');if(u)u.setAttribute('data-rv-done','1');}
 function show(){var u=document.querySelector('#prdReview ul.board-list');if(!u||!window.MutationObserver){reveal();return;}var t=setTimeout(fin,450);var mo=new MutationObserver(function(){clearTimeout(t);t=setTimeout(fin,450);});function fin(){mo.disconnect();reveal();}mo.observe(u,{childList:true,subtree:true,characterData:true});}
 setTimeout(reveal,5000);
 function pno(){var m=location.search.match(/product_no=(\d+)/)||location.pathname.match(/\/product\/[^\/]+\/(\d+)\//)||location.pathname.match(/\/(\d+)\/category\//);if(m)return m[1];if(typeof iProductNo!=='undefined'&&iProductNo)return String(iProductNo);return null;}
-function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
-function run(){var ul=document.querySelector('#prdReview ul.board-list');if(!ul){show();return;}if(ul.getAttribute('data-rv'))return;ul.setAttribute('data-rv','1');var no=pno();if(!no){show();return;}
-var orig=[].slice.call(ul.children);var n=orig.length;if(n<2){show();return;}
-var key='dgrv_'+no,c=ls(key);var firstHref=(orig[0].querySelector('a.board-item__link')||{getAttribute:function(){return ''}}).getAttribute('href');
-if(c&&c.h&&c.f===firstHref&&(Date.now()-c.t)<6*3600*1000){ul.innerHTML=c.h;show();return;}
-var items=[],seen={};function add(li){var a=li.querySelector('a.board-item__link');var k=a?a.getAttribute('href'):li.textContent;if(seen[k])return;seen[k]=1;var t=((li.querySelector('.board-item__subject')||{}).textContent||'').replace(/\s+/g,' ').trim();var img=!!li.querySelector('.board-item__attach[style*="url"]');var m=((li.querySelector('.board-item__score')||{}).className||'').match(/--(\d)/);var st=m?+m[1]:5;items.push({h:li.outerHTML,s:(img?1000:0)+Math.min(t.length,200)+(st>=4?0:-5000),i:items.length});}
-orig.forEach(add);
+function rno(li){var a=li.querySelector('a[href*="no="]');var m=(a&&a.getAttribute('href')||'').match(/[?&]no=(\d+)/);return m?m[1]:'';}
+function good(li){var t=((li.querySelector('.board-item__subject')||{}).textContent||'').replace(/\s+/g,'');var img=!!li.querySelector('.board-item__attach[style*="url"]');var m=((li.querySelector('.board-item__score')||{}).className||'').match(/--(\d)/);var st=m?+m[1]:5;return st>=4&&(img||t.length>=10);}
+function bindMore(){var b=document.querySelector('#prdReview a.board__btn');if(!b||b.__rvAll)return;b.__rvAll=1;b.addEventListener('click',function(){var u=document.querySelector('#prdReview ul.board-list');if(u)u.classList.add('rv-all');},true);}
+function run(){var ul=document.querySelector('#prdReview ul.board-list');if(!ul){reveal();return;}if(ul.getAttribute('data-rv'))return;ul.setAttribute('data-rv','1');bindMore();setTimeout(bindMore,1500);var no=pno();if(!no){reveal();return;}
+var have={};[].slice.call(ul.children).forEach(function(li){have[rno(li)]=1;});
 var jobs=[2,3].map(function(p){return fetch('/product/detail.html?product_no='+no+'&page_4='+p,{credentials:'same-origin'}).then(function(r){return r.text();}).then(function(h){return new DOMParser().parseFromString(h,'text/html');}).catch(function(){return null;});});
-Promise.all(jobs).then(function(docs){docs.forEach(function(doc){if(doc)[].slice.call(doc.querySelectorAll('#prdReview ul.board-list>li')).forEach(add);});
-var top=items.slice().sort(function(a,b){return (b.s-a.s)||(a.i-b.i);}).slice(0,n);var html=top.map(function(x){return x.h;}).join('');var cur=document.querySelector('#prdReview ul.board-list');if(cur&&items.length>n){cur.innerHTML=html;ls(key,{h:html,f:firstHref,t:Date.now()});}show();}).catch(show);}
+Promise.all(jobs).then(function(docs){var cur=document.querySelector('#prdReview ul.board-list');if(!cur){reveal();return;}var add=[];docs.forEach(function(doc){if(!doc)return;[].slice.call(doc.querySelectorAll('#prdReview ul.board-list>li')).forEach(function(li){var k=rno(li);if(!k||have[k]||!good(li))return;have[k]=1;add.push(document.importNode(li,true));});});add.forEach(function(li){cur.appendChild(li);});show();}).catch(reveal);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
 })()}catch(e){try{var u=document.querySelector('#prdReview ul.board-list');if(u)u.setAttribute('data-rv-done','1');}catch(x){}}
