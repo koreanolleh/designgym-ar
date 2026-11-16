@@ -6,7 +6,7 @@ var ia=document.querySelector('.xans-product-detail .infoArea');if(!ia)return;
 var act=ia.querySelector('.xans-product-action');if(!act)return;
 var nodes=[ia.querySelector('table.xans-product-option'),document.getElementById('totalProducts'),document.getElementById('totalPrice'),ia.querySelector('.EC-price-warning'),act].filter(function(n){return n&&n.parentNode===ia;});
 if(nodes.indexOf(act)<0)return;
-var nameEl=ia.querySelector('.product-name');var name=nameEl?(nameEl.innerText||'').trim().split('\n')[0]:document.title;
+function gname(){var e=ia.querySelector('.product-name');var t=e?(e.textContent||'').replace(/\s+/g,' ').trim():'';if(!t){var o=document.querySelector('meta[property="og:title"]');t=o?o.content:'';}return t;}var name=gname();
 var og=document.querySelector('meta[property="og:image"]');var img=og?og.content:'';
 var pr=[];var pd=ia.querySelector('.xans-product-detail')||ia;[].forEach.call(pd.querySelectorAll('*'),function(e){if(!e.children.length){var t=(e.textContent||'').trim();if(/^[\d,]+원$/.test(t)&&pr.length<2&&e.offsetParent)pr.push(t);}});
 var sale=pr.length>1?pr[1]:pr[0]||'',orig=pr.length>1?pr[0]:'';
@@ -54,7 +54,8 @@ ia.appendChild(bar);ia.appendChild(dr);
 var phs=nodes.map(function(n){var c=document.createComment('dgsb');n.parentNode.insertBefore(c,n);return c;});
 var anchor=phs[phs.length-1];var isOpen=false;
 function anchorTop(){var r=document.createRange();r.selectNode(anchor);return r.getBoundingClientRect();}
-function open(m){if(isOpen){dr.className='open m-'+m;return;}
+function rn(){var t=gname();if(t){bar.querySelector('.dgsb-t').textContent=t;var q=dr.querySelector('.dgsb-nm');if(q)q.textContent=t;}}
+function open(m){rn();if(isOpen){dr.className='open m-'+m;return;}
  var L=dr.querySelector('.dgsb-L'),R=dr.querySelector('.dgsb-R');
  nodes.forEach(function(n){R.appendChild(n);});
  dr.className='m-'+m;void dr.offsetWidth;dr.className='open m-'+m;isOpen=true;document.documentElement.classList.add('dgsb-open');bar.classList.remove('show');}
@@ -65,7 +66,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
 function lift(on){ia.style.zIndex=on?'50':'';}
 var raf=0;function tick(){raf=0;var past=isOpen?anchorTop().top<80:act.getBoundingClientRect().bottom<80;
  if(isOpen){lift(1);if(!past)close();return;}
- bar.classList.toggle('show',past);lift(past);}
+ if(past&&!bar.classList.contains('show'))rn();bar.classList.toggle('show',past);lift(past);}
 window.addEventListener('scroll',function(){if(!raf)raf=requestAnimationFrame(tick);},{passive:true});
 window.addEventListener('resize',function(){if(!raf)raf=requestAnimationFrame(tick);});
 tick();
