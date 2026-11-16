@@ -1,9 +1,10 @@
-/* dg-rv 2026-11-16 v3 mobile: hide culture box, collapse Q&A, best reviews first (no flicker) */
+/* dg-rv 2026-11-16 v4 mobile: hide culture box, collapse Q&A, best reviews first (no flicker) */
 try{(function(){
 var ul0=null;
 if(!document.getElementById('dg-rv-css')){var s=document.createElement('style');s.id='dg-rv-css';s.textContent='#dgpa{display:none!important}#prdQnA .xans-product-qna,#prdQnA .ec-base-paginate{display:none!important}#prdQnA .board__btn-wrap{padding-top:4px!important}#prdReview ul.board-list{transition:opacity .25s}#prdReview ul.board-list:not([data-rv-done]){opacity:0}';(document.head||document.documentElement).appendChild(s);}
-function show(){var u=document.querySelector('#prdReview ul.board-list');if(u)u.setAttribute('data-rv-done','1');}
-setTimeout(show,5000);
+function reveal(){var u=document.querySelector('#prdReview ul.board-list');if(u)u.setAttribute('data-rv-done','1');}
+function show(){var u=document.querySelector('#prdReview ul.board-list');if(!u||!window.MutationObserver){reveal();return;}var t=setTimeout(fin,450);var mo=new MutationObserver(function(){clearTimeout(t);t=setTimeout(fin,450);});function fin(){mo.disconnect();reveal();}mo.observe(u,{childList:true,subtree:true,characterData:true});}
+setTimeout(reveal,5000);
 function pno(){var m=location.search.match(/product_no=(\d+)/)||location.pathname.match(/\/product\/[^\/]+\/(\d+)\//)||location.pathname.match(/\/(\d+)\/category\//);if(m)return m[1];if(typeof iProductNo!=='undefined'&&iProductNo)return String(iProductNo);return null;}
 function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
 function run(){var ul=document.querySelector('#prdReview ul.board-list');if(!ul){show();return;}if(ul.getAttribute('data-rv'))return;ul.setAttribute('data-rv','1');var no=pno();if(!no){show();return;}
