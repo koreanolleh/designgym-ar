@@ -1,0 +1,17 @@
+.xans-product-detail .xans-product-action::before,.xans-product-detail .xans-product-action::after{display:none!important;content:none!important}
+.xans-product-detail .xans-product-action{display:flex!important;flex-wrap:wrap;gap:8px 6px;align-items:stretch}
+.xans-product-detail .xans-product-action>.inline,.xans-product-detail .xans-product-action>.dg-gift-row{display:contents!important}
+.xans-product-detail .xans-product-action .dg-gift-btn{order:1;flex:1 1 0;width:auto!important;min-width:0;height:55px;margin:0!important;border-color:#333!important}
+.xans-product-detail .xans-product-action .btn-action--cart{order:2;flex:0 0 55px;margin:0!important}
+.xans-product-detail .xans-product-action .btn-action--wish{order:3;flex:0 0 55px;margin:0!important}
+.xans-product-detail .xans-product-action .btn-action.buy,.xans-product-detail .xans-product-action .btn-action--soldout{order:4;flex:0 0 100%;width:100%!important;margin:0!important}
+.xans-product-detail #NaverChk_Button{order:5;flex:1 1 0;min-width:0;margin:0!important;overflow:hidden}
+.xans-product-detail #appPaymentButtonBox{order:6;flex:1 1 0;min-width:0;margin:0!important;display:block!important;overflow:hidden}
+#NaverChk_Button .npay_storebtn_bx,#NaverChk_Button .npay_button_box,#NaverChk_Button .npay_button{width:100%!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;height:auto!important;float:none!important}
+#NaverChk_Button .npay_text,#NaverChk_Button .npay_event,#NaverChk_Button td.btn_width{display:none!important}
+#NaverChk_Button table.npay_btn_list{width:100%!important;margin:0!important;border-collapse:collapse}
+#NaverChk_Button td.npay_btn_item{padding:0!important;width:100%!important;height:55px!important;background:#03C75A!important;vertical-align:middle!important}
+#NaverChk_Button a.npay_btn_pay{display:block!important;width:100%!important;border-radius:0!important;background-color:#03C75A!important;margin:0!important;border:0!important}
+#appPaymentButtonBox #kakao-checkout-button,#appPaymentButtonBox .__checkout_buy_container,#appPaymentButtonBox .__checkout_buy_contents{width:100%!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;height:auto!important;display:block!important}
+#appPaymentButtonBox .__checkout_buy_title,#appPaymentButtonBox .__checkout_wrap_btn_channel,#appPaymentButtonBox .__checkout_btn_wish,#appPaymentButtonBox .__checkout_buy_notice,#appPaymentButtonBox .__checkout_txt_buy_tooltip{display:none!important}
+#appPaymentButtonBox .__checkout_btn_buy{display:flex!important;align-items:center;justify-content:center;width:100%!important;height:55px!important;border-radius:0!important;margin:0!important;float:none!important;background-color:#FEE500!important;border:0!important}
