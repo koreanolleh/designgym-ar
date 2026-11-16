@@ -49,7 +49,7 @@ bar.innerHTML='<div class="dgsb-bar"><div class="dgsb-bin">'+(img?'<img src="'+i
 bar.querySelector('.dgsb-t').textContent=name;
 var dr=document.createElement('div');dr.id='dgsb-dr';
 dr.innerHTML='<div class="dgsb-hdl" title="닫기"><svg width="22" height="12" viewBox="0 0 22 12"><path d="M1 1l10 10L21 1" fill="none" stroke="#555" stroke-width="1.6"/></svg></div><div class="dgsb-din"><div class="dgsb-L"></div><div class="dgsb-R"></div></div>';
-var L0=dr.querySelector('.dgsb-L');L0.innerHTML='<div class="dgsb-info">'+(img?'<img src="'+img+'" alt="">':'')+'<div style="flex:1;min-width:0"><div class="dgsb-nm"></div><div class="dgsb-pr">'+(orig?'<s>'+orig+'</s>':'')+(pct?'<em>'+pct+'</em>':'')+sale+'</div><div class="dgsb-rows">'+(ship?'<div><b>배송비</b><span class="dgsb-ship"></span></div>':'')+'<div><b>결제</b>카드 · 네이버페이 · 카카오페이</div></div></div></div>';L0.querySelector('.dgsb-nm').textContent=name;if(ship)L0.querySelector('.dgsb-ship').textContent=ship;
+var L0=dr.querySelector('.dgsb-L');L0.innerHTML='<div class="dgsb-info">'+(img?'<img src="'+img+'" alt="">':'')+'<div style="flex:1;min-width:0"><div class="dgsb-nm"></div><div class="dgsb-pr">'+(orig?'<s>'+orig+'</s>':'')+(pct?'<em>'+pct+'</em>':'')+sale+'</div><div class="dgsb-rows">'+(ship?'<div><b>배송비</b><span class="dgsb-ship"></span></div>':'')+(/7일이내/.test(ddt)?'<div><b>교환·반품</b>상품 받은 날로부터 7일 이내</div>':'')+'</div></div></div>';L0.querySelector('.dgsb-nm').textContent=name;if(ship)L0.querySelector('.dgsb-ship').textContent=ship;
 ia.appendChild(bar);ia.appendChild(dr);
 var phs=nodes.map(function(n){var c=document.createComment('dgsb');n.parentNode.insertBefore(c,n);return c;});
 var anchor=phs[phs.length-1];var isOpen=false;
