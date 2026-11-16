@@ -13,14 +13,14 @@ var sale=pr.length>1?pr[1]:pr[0]||'',orig=pr.length>1?pr[0]:'';
 var ddt=((ia.querySelector('.info-dropdown')||{}).textContent||'').replace(/\s+/g,' ');
 var m1=ddt.match(/소비자가 ([\d,]+원)/),m2=ddt.match(/판매가 ([\d,]+원)/),m3=ddt.match(/배송비 (.+?)(?= 배송 ·| 상품|$)/);
 if(m2){sale=m2[1];orig=(m1&&m1[1]!==m2[1])?m1[1]:'';}
-var ship=m3?m3[1].trim():'';
+var ship=m3?m3[1].trim():'';try{var th=ship.match(/([\d,]+)원 이상[^)]*무료/);var sv=+String(sale).replace(/\D/g,'');if(th&&sv&&sv>=+th[1].replace(/\D/g,''))ship='무료배송';else if(/^무료/.test(ship))ship='무료배송';}catch(e){}
 var pct='';try{var a=+orig.replace(/\D/g,''),b=+sale.replace(/\D/g,'');if(a>b&&b)pct=Math.round((a-b)/a*100)+'%';}catch(e){}
 var sold=!!act.querySelector('.btn-action--soldout:not(.displaynone)')||!!act.querySelector('.btn-action.buy.displaynone');
 var hasGift=!!act.querySelector('.dg-gift-btn');
 var G='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="9" width="16" height="11"/><path d="M3 9h18M12 9v11M12 9c-2-4-6-4-6-1.5S12 9 12 9zm0 0c2-4 6-4 6-1.5S12 9 12 9z"/></svg>';
 var css=document.createElement('style');css.id='dgsb-css';css.textContent=
 '#dgsb{position:fixed;left:0;right:0;bottom:0;z-index:9990;font-family:inherit;color:#111;transform:translateY(110%);transition:transform .25s ease}'+
-'#dgsb.show{transform:none}'+
+'#dgsb.show{transform:none}'+'html.dgsb-open .scroll-page{display:none!important}'+
 '#dgsb .dgsb-bar{background:#fff;border-top:1px solid #e5e5e5;box-shadow:0 -6px 20px rgba(0,0,0,.06)}'+
 '#dgsb .dgsb-bin{max-width:1280px;margin:0 auto;padding:12px 40px;display:flex;align-items:center;gap:10px;box-sizing:border-box}'+
 '#dgsb .dgsb-bin img{width:48px;height:48px;object-fit:cover;margin-right:6px;flex:none}'+
@@ -57,8 +57,8 @@ function anchorTop(){var r=document.createRange();r.selectNode(anchor);return r.
 function open(m){if(isOpen){dr.className='open m-'+m;return;}
  var L=dr.querySelector('.dgsb-L'),R=dr.querySelector('.dgsb-R');
  nodes.forEach(function(n){R.appendChild(n);});
- dr.className='m-'+m;void dr.offsetWidth;dr.className='open m-'+m;isOpen=true;bar.classList.remove('show');}
-function close(){if(!isOpen)return;nodes.forEach(function(n,i){phs[i].parentNode.insertBefore(n,phs[i].nextSibling);});dr.className='';isOpen=false;tick();}
+ dr.className='m-'+m;void dr.offsetWidth;dr.className='open m-'+m;isOpen=true;document.documentElement.classList.add('dgsb-open');bar.classList.remove('show');}
+function close(){if(!isOpen)return;nodes.forEach(function(n,i){phs[i].parentNode.insertBefore(n,phs[i].nextSibling);});dr.className='';isOpen=false;document.documentElement.classList.remove('dgsb-open');tick();}
 bar.addEventListener('click',function(e){var b=e.target.closest('[data-m]');if(b)open(b.getAttribute('data-m'));});
 dr.querySelector('.dgsb-hdl').addEventListener('click',close);
 document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
