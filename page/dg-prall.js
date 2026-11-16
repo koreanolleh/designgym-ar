@@ -8,7 +8,7 @@ function fix(R){
   $.ajax({url:'/moa/import/board/prdt_data.html',dataType:'html',
    success:function(result){try{
     var boardPrdNo=$('#prdReview').data('prd-no');var item=$(result).find('.jsRvItem');
-    var getScoreCount=0,scoreHasLength=0;
+    var getScoreCount=0,scoreHasLength=0,pick=[];
     item.each(function(){
      var it=$(this);var ipn=String(it.data('prd-link')||'').split('product_no=')[1];
      if(ipn==boardPrdNo){
@@ -16,18 +16,20 @@ function fix(R){
       var st=it.find('.pr-all__thumbnail').attr('style')||'';
       if(/url\(\s*['"]?[^'")\s]+\.(jpe?g|png|gif|webp)/i.test(st)){
        var no=String(it.data('read-link')||'').replace(/(\S*)[?&]no=(\d+)(\S*)/g,'$2');
-       it.attr('data-list-no',no);it.appendTo($('.jsPrApd'));
+       it.attr('data-list-no',no);pick.push(it);
       }
      }
     });
-    if($('.jsPrApd').find('.jsRvItem').length){
-     $('.jsPrApd').find('.jsRvItem').addClass('swiper-slide');
-     $('.jsPrAll').addClass('swiper-container').end().find('.jsPrApd').addClass('swiper-wrapper');
-    }
     var scoreRate=getScoreCount/scoreHasLength.toFixed(1);var scoreFillVal=100*scoreRate/5;var num_check=/^[0-9]*$/;
     if(!num_check.test(scoreRate)){scoreRate=scoreRate.toFixed(1);}
     if(scoreRate&&!isNaN(scoreRate)){$('.jsScoreRate').text(scoreRate);$('.jsScoreUiFill').attr('style','width: '+scoreFillVal+'%');$('.review-score, .info-review').addClass('on');}
+    /* 스킨의 runPrAll 은 .jsPrApd 에 항목이 '붙는 것'을 지켜보다가 정렬·슬라이더를 만든다 → 먼저 감시를 켜고 그 다음에 붙인다 */
     R.runPrAll();
+    for(var q=0;q<pick.length;q++){pick[q].appendTo($('.jsPrApd'));}
+    if(pick.length){
+     $('.jsPrApd').find('.jsRvItem').addClass('swiper-slide');
+     $('.jsPrAll').addClass('swiper-container').end().find('.jsPrApd').addClass('swiper-wrapper');
+    }
    }catch(e){}}});
  };
 }
