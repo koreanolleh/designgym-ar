@@ -56,7 +56,7 @@ function close(){if(!isOpen)return;nodes.forEach(function(n,i){phs[i].parentNode
 bar.addEventListener('click',function(e){var b=e.target.closest('[data-m]');if(b)open(b.getAttribute('data-m'));});
 dr.querySelector('.dgsb-hdl').addEventListener('click',close);
 document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
-var raf=0;function tick(){raf=0;var r=anchorTop();var past=r.top<60;
+var raf=0;function tick(){raf=0;var past=isOpen?anchorTop().top<80:act.getBoundingClientRect().bottom<80;
  if(isOpen){if(!past)close();return;}
  bar.classList.toggle('show',past);}
 window.addEventListener('scroll',function(){if(!raf)raf=requestAnimationFrame(tick);},{passive:true});
