@@ -4,7 +4,7 @@ var held;
 function fix(R){
  if(!R||typeof R.getPrAll!=='function'||R.__dgp)return;R.__dgp=1;var orig=R.getPrAll;
  R.getPrAll=function(){
-  var $=window.jQuery;if(!$){return orig.apply(this,arguments);}
+  var $=window.$||window.jQuery;if(!$){return orig.apply(this,arguments);}
   $.ajax({url:'/moa/import/board/prdt_data.html',dataType:'html',
    success:function(result){try{
     var boardPrdNo=$('#prdReview').data('prd-no');var item=$(result).find('.jsRvItem');
