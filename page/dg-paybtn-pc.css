@@ -11,7 +11,7 @@
 #NaverChk_Button .npay_text,#NaverChk_Button .npay_event,#NaverChk_Button td.btn_width{display:none!important}
 #NaverChk_Button table.npay_btn_list{width:100%!important;margin:0!important;border-collapse:collapse}
 #NaverChk_Button td.npay_btn_item{padding:0!important;width:100%!important;height:55px!important;background:#03C75A!important;vertical-align:middle!important}
-#NaverChk_Button a.npay_btn_pay{display:block!important;width:100%!important;border-radius:0!important;background-color:#03C75A!important;margin:0!important;border:0!important}
+#NaverChk_Button a.npay_btn_pay{display:block!important;width:100%!important;height:55px!important;box-sizing:border-box!important;padding:10px 0!important;background-origin:content-box!important;background-clip:content-box!important;border-radius:0!important;background-color:#03C75A!important;margin:0!important;border:0!important}
 #appPaymentButtonBox #kakao-checkout-button,#appPaymentButtonBox .__checkout_buy_container,#appPaymentButtonBox .__checkout_buy_contents{width:100%!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;height:auto!important;display:block!important}
 #appPaymentButtonBox .__checkout_buy_title,#appPaymentButtonBox .__checkout_wrap_btn_channel,#appPaymentButtonBox .__checkout_btn_wish,#appPaymentButtonBox .__checkout_buy_notice,#appPaymentButtonBox .__checkout_txt_buy_tooltip{display:none!important}
 #appPaymentButtonBox .__checkout_btn_buy{display:flex!important;align-items:center;justify-content:center;width:100%!important;height:55px!important;border-radius:0!important;margin:0!important;float:none!important;background-color:#FEE500!important;border:0!important}
